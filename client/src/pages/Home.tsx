@@ -417,7 +417,7 @@ function SuccessView({ tx }: { tx: Transaction }) {
       </div>
 
       <div className="bg-primary text-black font-bold p-3 text-center mb-6 text-sm tracking-widest animate-pulse">
-        SCREENSHOT THE JSON BELOW AND SEND TO ADMIN WITH YOUR BOT SESSION ID
+        SCREENSHOT THE JSON BELOW AND SEND TO SILENT WOLF WITH YOUR BOT SESSION ID
       </div>
 
       <div className="relative group">

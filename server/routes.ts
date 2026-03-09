@@ -24,6 +24,23 @@ function paystackRequest(options: https.RequestOptions, body?: string): Promise<
 
 const BASE_AMOUNT_KES = 70;
 
+// Simple in-memory rate limiter
+const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+function checkRateLimit(ip: string, limit: number, windowMs: number): boolean {
+  const now = Date.now();
+  const entry = rateLimitStore.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rateLimitStore.set(ip, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (entry.count >= limit) return false;
+  entry.count++;
+  return true;
+}
+function getClientIp(req: any): string {
+  return (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.socket?.remoteAddress || "unknown";
+}
+
 let cachedRates: Record<string, number> | null = null;
 let ratesCachedAt = 0;
 const RATES_TTL_MS = 60 * 60 * 1000;
@@ -102,6 +119,8 @@ export async function registerRoutes(
   // --- Mobile Money (M-Pesa / Airtel Kenya) ---
   app.post(api.payments.mobilemoney.path, async (req, res) => {
     try {
+      const ip = getClientIp(req);
+      if (!checkRateLimit(ip, 8, 60_000)) return res.status(429).json({ message: "Too many requests. Please wait a moment." });
       const input = api.payments.mobilemoney.input.parse(req.body);
       if (!PAYSTACK_SECRET_KEY) return res.status(500).json({ message: "Payment gateway not configured." });
 
@@ -192,6 +211,8 @@ export async function registerRoutes(
   // --- Card Payment: Initialize redirect flow ---
   app.post(api.payments.init.path, async (req, res) => {
     try {
+      const ip = getClientIp(req);
+      if (!checkRateLimit(ip, 8, 60_000)) return res.status(429).json({ message: "Too many requests. Please wait a moment." });
       const input = api.payments.init.input.parse(req.body);
       if (!PAYSTACK_SECRET_KEY) return res.status(500).json({ message: "Payment gateway not configured." });
 

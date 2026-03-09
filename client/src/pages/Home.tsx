@@ -64,10 +64,10 @@ function PageContainer({ children }: { children: React.ReactNode }) {
 function CornerDeco() {
   return (
     <>
-      <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-primary/60" />
-      <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-primary/60" />
-      <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-primary/60" />
-      <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-primary/60" />
+      <div className="pointer-events-none absolute -top-px -left-px w-5 h-5 border-t-2 border-l-2 border-primary" />
+      <div className="pointer-events-none absolute -top-px -right-px w-5 h-5 border-t-2 border-r-2 border-primary" />
+      <div className="pointer-events-none absolute -bottom-px -left-px w-5 h-5 border-b-2 border-l-2 border-primary" />
+      <div className="pointer-events-none absolute -bottom-px -right-px w-5 h-5 border-b-2 border-r-2 border-primary" />
     </>
   );
 }
@@ -417,7 +417,7 @@ function SuccessView({ tx }: { tx: Transaction }) {
       </div>
 
       <div className="bg-primary text-black font-bold p-3 text-center mb-6 text-sm tracking-widest animate-pulse">
-        SCREENSHOT THIS DATABLOCK AND SHARE WITH ADMIN
+        SCREENSHOT THE JSON BELOW AND SEND TO ADMIN WITH YOUR BOT SESSION ID
       </div>
 
       <div className="relative group">

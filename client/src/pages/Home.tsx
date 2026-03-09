@@ -371,10 +371,16 @@ function MobileMoneyWaitingView({
 
   const status = data?.status;
   const psMessage = (data as any)?.psMessage as string | undefined;
+
+  const isCancelled = status === "abandoned" ||
+    (status === "failed" && !!psMessage?.toLowerCase().includes("cancel"));
+  const isTimeout = status === "timeout" ||
+    (status === "failed" && !!psMessage?.toLowerCase().includes("timeout"));
+
   const terminalState: TerminalState =
-    status === "abandoned" ? "abandoned"
-    : status === "timeout" ? "timeout"
-    : status === "failed" ? "failed"
+    isCancelled ? "abandoned"
+    : isTimeout ? "timeout"
+    : (status === "failed" || status === "abandoned" || status === "timeout") ? "failed"
     : null;
 
   return (

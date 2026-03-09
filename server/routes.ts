@@ -186,7 +186,14 @@ export async function registerRoutes(
 
         res.status(200).json({ reference: ref, displayText, status });
       } else {
-        res.status(500).json({ message: response.message || "Failed to initiate mobile money payment" });
+        const rawMsg: string = response.message || "";
+        let userMsg = rawMsg || "Failed to initiate mobile money payment";
+        if (rawMsg.toLowerCase().includes("invalid provider") || rawMsg.toLowerCase().includes("provider")) {
+          userMsg = "Mobile money is not available for this region with the current payment account. Please use Card payment instead.";
+        } else if (rawMsg.toLowerCase().includes("currency")) {
+          userMsg = "This currency is not supported by the current payment account. Please use Card payment instead.";
+        }
+        res.status(500).json({ message: userMsg });
       }
     } catch (err) {
       if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });

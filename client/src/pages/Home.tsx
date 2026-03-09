@@ -26,9 +26,16 @@ import {
 
 const BASE_KES = 70;
 
+const FALLBACK_RATES: Record<string, number> = {
+  KES: 1, NGN: 10.73, GHS: 0.083, ZAR: 0.129, EGP: 0.388,
+  RWF: 11.29, XOF: 4.38, TZS: 185.0, UGX: 26.5, USD: 0.0077,
+};
+
 function convertAmount(rates: Record<string, number> | undefined, currency: string): number {
-  if (!rates || currency === "KES") return BASE_KES;
-  return Math.round(BASE_KES * (rates[currency] ?? 1) * 100) / 100;
+  if (currency === "KES") return BASE_KES;
+  const rate = rates?.[currency] ?? FALLBACK_RATES[currency] ?? null;
+  if (rate === null) return BASE_KES;
+  return Math.round(BASE_KES * rate * 100) / 100;
 }
 
 function formatAmount(amount: number, currency: string): string {

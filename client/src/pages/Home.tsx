@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -40,19 +40,19 @@ function formatAmount(amount: number, currency: string): string {
 
 function PageContainer({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen scanline-overlay flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen scanline-overlay flex flex-col items-center justify-center p-3 relative overflow-hidden">
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
-      <div className="w-full max-w-lg z-10 relative">
-        <div className="text-center mb-10">
+      <div className="w-full max-w-md z-10 relative">
+        <div className="text-center mb-4">
           <h1
-            className="text-6xl md:text-7xl font-black text-primary animate-flicker glow-text uppercase tracking-widest"
+            className="text-4xl md:text-5xl font-black text-primary animate-flicker glow-text uppercase tracking-widest"
             style={{ fontFamily: "var(--font-display)" }}
           >
             WOLFTECH
           </h1>
-          <p className="text-primary/70 text-sm font-bold tracking-[0.3em] mt-2 flex items-center justify-center gap-2">
-            <Terminal className="w-4 h-4" /> SECURE BOT DEPLOYMENT
+          <p className="text-primary/70 text-xs font-bold tracking-[0.3em] mt-1 flex items-center justify-center gap-1">
+            <Terminal className="w-3 h-3" /> SECURE BOT DEPLOYMENT
           </p>
         </div>
         {children}
@@ -399,32 +399,40 @@ function MobileMoneyWaitingView({
 }
 
 function SuccessView({ tx }: { tx: Transaction }) {
+  const jsonRef = useRef<HTMLPreElement>(null);
+  useEffect(() => {
+    if (jsonRef.current) {
+      setTimeout(() => jsonRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
+    }
+  }, []);
+
   return (
-    <div className="glass-panel p-6 md:p-8 glow-box relative">
+    <div className="glass-panel p-5 md:p-6 glow-box relative">
       <CornerDeco />
       <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
-        <ShieldCheck className="w-32 h-32 text-primary" />
+        <ShieldCheck className="w-24 h-24 text-primary" />
       </div>
 
-      <div className="flex items-center gap-3 mb-6 relative z-10">
-        <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center shrink-0">
-          <CheckSquare className="w-6 h-6 text-black" />
+      <div className="flex items-center gap-3 mb-4 relative z-10">
+        <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shrink-0">
+          <CheckSquare className="w-5 h-5 text-black" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-white tracking-widest">DEPLOYMENT AUTHORIZED</h2>
-          <p className="text-primary font-mono text-sm">STATUS: SUCCESS</p>
+          <h2 className="text-xl font-bold text-white tracking-widest">DEPLOYMENT AUTHORIZED</h2>
+          <p className="text-primary font-mono text-xs">STATUS: SUCCESS</p>
         </div>
       </div>
 
-      <div className="bg-primary text-black font-bold p-3 text-center mb-6 text-sm tracking-widest animate-pulse">
+      <div className="bg-primary text-black font-bold p-2 text-center mb-4 text-xs tracking-widest animate-pulse">
         SCREENSHOT THE JSON BELOW AND SEND TO SILENT WOLF WITH YOUR BOT SESSION ID
       </div>
 
       <div className="relative group">
         <div className="absolute inset-0 bg-primary/20 blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
         <pre
+          ref={jsonRef}
           data-testid="text-success-json"
-          className="relative bg-[#050505] border border-primary/40 p-4 md:p-6 overflow-x-auto font-mono text-xs md:text-sm text-primary shadow-inner selection:bg-primary selection:text-black leading-relaxed"
+          className="relative bg-[#050505] border border-primary/40 p-4 overflow-x-auto font-mono text-xs text-primary shadow-inner selection:bg-primary selection:text-black leading-relaxed"
           style={{ fontFamily: "var(--font-mono)" }}
         >
 {`{
@@ -446,7 +454,7 @@ function SuccessView({ tx }: { tx: Transaction }) {
       <button
         onClick={() => window.location.href = "/"}
         data-testid="button-acknowledge"
-        className="mt-8 w-full border border-primary/50 text-primary py-4 font-bold tracking-widest flex items-center justify-center gap-2"
+        className="mt-4 w-full border border-primary/50 text-primary py-3 font-bold tracking-widest flex items-center justify-center gap-2 text-sm"
       >
         ACKNOWLEDGE & CLOSE
       </button>
@@ -522,44 +530,44 @@ function PaymentForm() {
   );
 
   return (
-    <div className="glass-panel p-8 md:p-10 glow-box relative">
+    <div className="glass-panel p-5 md:p-6 glow-box relative">
       <CornerDeco />
 
-      <div className="mb-8 border-b border-primary/20 pb-6 space-y-5">
+      <div className="mb-4 border-b border-primary/20 pb-4 space-y-3">
         <CountrySelector selected={country} onChange={setCountry} />
 
         <div className="text-center">
-          <h2 className="text-2xl text-white font-semibold flex justify-center items-center gap-2">
-            <Zap className="w-6 h-6 text-primary" /> INITIALIZE UPLINK
+          <h2 className="text-lg text-white font-semibold flex justify-center items-center gap-2">
+            <Zap className="w-4 h-4 text-primary" /> INITIALIZE UPLINK
           </h2>
-          <div className="mt-4 flex flex-col items-center">
+          <div className="mt-2 flex flex-col items-center">
             <span className="text-muted-foreground text-xs font-bold tracking-widest">REQUIRED DEPLOYMENT FEE</span>
-            <span className="text-4xl font-black text-primary glow-text mt-1">{formattedAmount}</span>
+            <span className="text-3xl font-black text-primary glow-text mt-1">{formattedAmount}</span>
             {!isKenya && (
-              <span className="text-primary/40 text-xs font-mono mt-1">≈ {BASE_KES} KES</span>
+              <span className="text-primary/40 text-xs font-mono mt-0.5">≈ {BASE_KES} KES</span>
             )}
           </div>
         </div>
       </div>
 
-      <div className="mb-8 border border-primary/20 bg-primary/5 p-4 space-y-3">
-        <p className="text-primary text-xs font-bold tracking-widest text-center mb-3">HOW IT WORKS</p>
-        <div className="flex items-start gap-3">
-          <span className="text-primary font-black font-mono text-sm shrink-0 w-5">01</span>
-          <p className="text-muted-foreground text-xs font-mono leading-relaxed">Complete the payment below using mobile money or card.</p>
+      <div className="mb-4 border border-primary/20 bg-primary/5 p-3 space-y-2">
+        <p className="text-primary text-xs font-bold tracking-widest text-center mb-2">HOW IT WORKS</p>
+        <div className="flex items-start gap-2">
+          <span className="text-primary font-black font-mono text-xs shrink-0 w-4">01</span>
+          <p className="text-muted-foreground text-xs font-mono leading-snug">Complete the payment below using mobile money or card.</p>
         </div>
-        <div className="flex items-start gap-3">
-          <span className="text-primary font-black font-mono text-sm shrink-0 w-5">02</span>
-          <p className="text-muted-foreground text-xs font-mono leading-relaxed">Take a screenshot of the payment confirmation JSON shown after success.</p>
+        <div className="flex items-start gap-2">
+          <span className="text-primary font-black font-mono text-xs shrink-0 w-4">02</span>
+          <p className="text-muted-foreground text-xs font-mono leading-snug">Screenshot the payment confirmation JSON shown after success.</p>
         </div>
-        <div className="flex items-start gap-3">
-          <span className="text-primary font-black font-mono text-sm shrink-0 w-5">03</span>
-          <p className="text-muted-foreground text-xs font-mono leading-relaxed">Send the screenshot to <span className="text-primary font-bold">Silent Wolf</span> along with your <span className="text-primary font-bold">Bot Session ID</span>.</p>
+        <div className="flex items-start gap-2">
+          <span className="text-primary font-black font-mono text-xs shrink-0 w-4">03</span>
+          <p className="text-muted-foreground text-xs font-mono leading-snug">Send screenshot to <span className="text-primary font-bold">Silent Wolf</span> with your <span className="text-primary font-bold">Bot Session ID</span>.</p>
         </div>
       </div>
 
       {isKenya && (
-        <div className="flex gap-0 mb-8 border border-primary/30">
+        <div className="flex gap-0 mb-4 border border-primary/30">
           <button
             type="button"
             data-testid="tab-mpesa"

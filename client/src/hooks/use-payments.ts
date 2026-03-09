@@ -1,27 +1,13 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "@shared/routes";
 
-export function useExchangeRates() {
-  return useQuery({
-    queryKey: [api.payments.rates.path],
-    queryFn: async () => {
-      const res = await fetch(api.payments.rates.path);
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message || "Failed to fetch rates");
-      return json as { rates: Record<string, number> };
-    },
-    staleTime: 60 * 60 * 1000,
-    refetchOnWindowFocus: false,
-  });
-}
-
 export function useInitPayment() {
   return useMutation({
-    mutationFn: async ({ email, country }: { email: string; country: string }) => {
+    mutationFn: async (email: string) => {
       const res = await fetch(api.payments.init.path, {
         method: api.payments.init.method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, country }),
+        body: JSON.stringify({ email }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || "Failed to initialize payment gateway");
@@ -58,48 +44,13 @@ export function usePollMobileMoneyStatus(reference: string | null, enabled: bool
       const res = await fetch(`/api/payments/mobilemoney/${reference}`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || "Failed to check status");
-      return json as import("@shared/schema").Transaction;
+      return json as import("@shared/schema").Transaction & { psMessage?: string };
     },
     enabled: !!reference && enabled,
     refetchInterval: (query) => {
-      const data = query.state.data as import("@shared/schema").Transaction | undefined;
+      const data = query.state.data as (import("@shared/schema").Transaction & { psMessage?: string }) | undefined;
       const done = ["success", "failed", "abandoned", "timeout"];
       if (data?.status && done.includes(data.status)) return false;
-      return 3000;
-    },
-    refetchOnWindowFocus: false,
-  });
-}
-
-export function useInitStkPush() {
-  return useMutation({
-    mutationFn: async ({ email, phone }: { email: string; phone: string }) => {
-      const res = await fetch(api.payments.stk.path, {
-        method: api.payments.stk.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, phone }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message || "Failed to send STK push");
-      return json as { reference: string; displayText: string; status: string };
-    },
-  });
-}
-
-export function usePollStkStatus(reference: string | null, enabled: boolean) {
-  return useQuery({
-    queryKey: ['/api/payments/stk', reference],
-    queryFn: async () => {
-      if (!reference) throw new Error("No reference");
-      const res = await fetch(`/api/payments/stk/${reference}`);
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message || "Failed to check status");
-      return json as import("@shared/schema").Transaction;
-    },
-    enabled: !!reference && enabled,
-    refetchInterval: (query) => {
-      const data = query.state.data as import("@shared/schema").Transaction | undefined;
-      if (data?.status === "success" || data?.status === "failed") return false;
       return 3000;
     },
     refetchOnWindowFocus: false,

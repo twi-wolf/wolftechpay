@@ -3,13 +3,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
-  useExchangeRates,
   useInitPayment,
   useInitMobileMoney,
   usePollMobileMoneyStatus,
   useVerifyPaymentQuery,
 } from "@/hooks/use-payments";
-import { COUNTRIES, type CountryConfig } from "@shared/countries";
+import { KENYA } from "@shared/countries";
 import type { Transaction } from "@shared/schema";
 import {
   Terminal,
@@ -21,23 +20,7 @@ import {
   CreditCard,
   Smartphone,
   ChevronDown,
-  Globe,
 } from "lucide-react";
-
-const BASE_KES = 70;
-
-function convertAmount(rates: Record<string, number> | undefined, currency: string): number {
-  if (!rates || currency === "KES") return BASE_KES;
-  const rate = rates[currency] ?? 1;
-  return Math.round(BASE_KES * rate * 100) / 100;
-}
-
-function formatAmount(amount: number, currency: string): string {
-  if (currency === "XOF" || currency === "RWF") {
-    return `${Math.round(amount).toLocaleString()} ${currency}`;
-  }
-  return `${amount.toFixed(2)} ${currency}`;
-}
 
 function PageContainer({ children }: { children: React.ReactNode }) {
   return (
@@ -121,69 +104,12 @@ function SubmitButton({ pending, label, pendingLabel }: { pending: boolean; labe
   );
 }
 
-function CountrySelector({
-  selected,
-  onChange,
-}: {
-  selected: CountryConfig;
-  onChange: (c: CountryConfig) => void;
-}) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="space-y-2">
-      <label className="text-xs font-bold text-primary/80 tracking-widest flex items-center gap-2">
-        <Globe className="w-3 h-3" /> SELECT YOUR COUNTRY
-      </label>
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="w-full bg-black/50 border border-primary/30 px-4 py-4 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-mono flex items-center justify-between"
-        >
-          <span className="flex items-center gap-3">
-            <span className="text-xl">{selected.flag}</span>
-            <span>{selected.name}</span>
-            <span className="text-primary/50 text-xs">({selected.currency})</span>
-          </span>
-          <ChevronDown className={`w-4 h-4 text-primary/60 transition-transform ${open ? "rotate-180" : ""}`} />
-        </button>
-        {open && (
-          <div className="absolute top-full left-0 right-0 z-50 bg-black border border-primary/30 max-h-60 overflow-y-auto shadow-2xl">
-            {COUNTRIES.map((c) => (
-              <button
-                key={c.code}
-                type="button"
-                onClick={() => { onChange(c); setOpen(false); }}
-                className={`w-full px-4 py-3 text-left font-mono flex items-center gap-3 transition-colors ${
-                  c.code === selected.code
-                    ? "bg-primary/20 text-primary"
-                    : "text-white/80 hover:bg-primary/10"
-                }`}
-              >
-                <span className="text-xl">{c.flag}</span>
-                <span className="flex-1">{c.name}</span>
-                <span className="text-xs text-primary/50">{c.currency}</span>
-                <span className="text-xs text-primary/30">
-                  {c.paymentMethods.includes("mpesa") || c.paymentMethods.includes("mobilemoney")
-                    ? "📱+💳"
-                    : "💳"}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 const cardFormSchema = z.object({
   email: z.string().email({ message: "INVALID EMAIL" }),
 });
 type CardFormValues = z.infer<typeof cardFormSchema>;
 
-function CardPaymentForm({ country }: { country: CountryConfig }) {
+function CardPaymentForm() {
   const initPayment = useInitPayment();
   const form = useForm<CardFormValues>({
     resolver: zodResolver(cardFormSchema),
@@ -191,7 +117,7 @@ function CardPaymentForm({ country }: { country: CountryConfig }) {
   });
 
   const onSubmit = (data: CardFormValues) => {
-    initPayment.mutate({ email: data.email, country: country.code }, {
+    initPayment.mutate(data.email, {
       onSuccess: (res) => { window.location.href = res.authorizationUrl; },
       onError: (err) => { form.setError("root", { message: err.message }); },
     });
@@ -223,41 +149,22 @@ function CardPaymentForm({ country }: { country: CountryConfig }) {
 
 const mobileMoneySchema = z.object({
   phone: z.string().min(9, { message: "ENTER A VALID PHONE NUMBER" }),
-  provider: z.string().min(1, { message: "SELECT A PROVIDER" }),
+  provider: z.string().min(1),
 });
 type MobileMoneyFormValues = z.infer<typeof mobileMoneySchema>;
 
-function MobileMoneyForm({
-  country,
-  onSent,
-}: {
-  country: CountryConfig;
-  onSent: (ref: string, isMpesa: boolean) => void;
-}) {
+function MobileMoneyForm({ onSent }: { onSent: (ref: string, isMpesa: boolean) => void }) {
   const initMobileMoney = useInitMobileMoney();
-  const providers = country.momoProviders || [];
-  const isKenyaMpesa = country.code === "KE";
+  const providers = KENYA.momoProviders!;
 
   const form = useForm<MobileMoneyFormValues>({
     resolver: zodResolver(mobileMoneySchema),
-    defaultValues: {
-      phone: "",
-      provider: providers[0]?.code || "",
-    },
+    defaultValues: { phone: "", provider: providers[0].code },
   });
-
-  useEffect(() => {
-    form.setValue("provider", providers[0]?.code || "");
-    form.setValue("phone", "");
-  }, [country.code]);
 
   const onSubmit = (data: MobileMoneyFormValues) => {
     initMobileMoney.mutate(
-      {
-        phone: data.phone,
-        provider: data.provider,
-        country: country.code,
-      },
+      { phone: data.phone, provider: data.provider, country: "KE" },
       {
         onSuccess: (res) => { onSent(res.reference, data.provider === "mpesa"); },
         onError: (err) => { form.setError("root", { message: err.message }); },
@@ -265,12 +172,12 @@ function MobileMoneyForm({
     );
   };
 
-  const selectedProvider = providers.find((p) => p.code === form.watch("provider"));
+  const selectedProvider = form.watch("provider");
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
       {providers.length > 1 && (
-        <FormField label="MOBILE MONEY PROVIDER" error={form.formState.errors.provider?.message}>
+        <FormField label="PROVIDER" error={form.formState.errors.provider?.message}>
           <div className="relative">
             <select
               {...form.register("provider")}
@@ -289,14 +196,14 @@ function MobileMoneyForm({
       )}
 
       <FormField
-        label={isKenyaMpesa && selectedProvider?.code === "mpesa" ? "M-PESA PHONE NUMBER" : "MOBILE MONEY PHONE NUMBER"}
+        label={selectedProvider === "mpesa" ? "M-PESA PHONE NUMBER" : "AIRTEL MONEY PHONE NUMBER"}
         error={form.formState.errors.phone?.message}
       >
         <input
           {...form.register("phone")}
           data-testid="input-phone-mobile"
           disabled={initMobileMoney.isPending}
-          placeholder={country.phonePlaceholder}
+          placeholder={KENYA.phonePlaceholder}
           className="w-full bg-black/50 border border-primary/30 px-4 py-4 text-white placeholder:text-white/20 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-mono"
         />
       </FormField>
@@ -310,7 +217,7 @@ function MobileMoneyForm({
 
       <SubmitButton
         pending={initMobileMoney.isPending}
-        label={isKenyaMpesa && selectedProvider?.code === "mpesa" ? "SEND STK PUSH" : "AUTHORIZE PAYMENT"}
+        label={selectedProvider === "mpesa" ? "SEND STK PUSH" : "AUTHORIZE AIRTEL PAYMENT"}
         pendingLabel="SENDING REQUEST..."
       />
     </form>
@@ -370,7 +277,7 @@ function MobileMoneyWaitingView({
   }, [data, onSuccess]);
 
   const status = data?.status;
-  const psMessage = (data as any)?.psMessage as string | undefined;
+  const psMessage = data?.psMessage;
 
   const isCancelled = status === "abandoned" ||
     (status === "failed" && !!psMessage?.toLowerCase().includes("cancel"));
@@ -396,12 +303,12 @@ function MobileMoneyWaitingView({
           </div>
           <div>
             <h2 className="text-xl text-primary font-bold tracking-widest animate-pulse">
-              {isMpesa ? "AWAITING M-PESA" : "AWAITING AUTHORIZATION"}
+              {isMpesa ? "AWAITING M-PESA" : "AWAITING AIRTEL"}
             </h2>
             <p className="text-muted-foreground text-sm font-mono mt-2">
               {isMpesa
                 ? "Check your phone for an STK push prompt and enter your PIN."
-                : "Open your mobile money app and authorize the payment."}
+                : "Check your phone for the Airtel Money authorization prompt."}
             </p>
             <p className="text-primary/50 text-xs font-mono mt-3">REF: {reference}</p>
           </div>
@@ -515,30 +422,10 @@ function VerificationView({ reference }: { reference: string }) {
 type Tab = "mobilemoney" | "card";
 
 function PaymentForm() {
-  const [country, setCountry] = useState<CountryConfig>(COUNTRIES[0]);
   const [tab, setTab] = useState<Tab>("mobilemoney");
   const [momoRef, setMomoRef] = useState<string | null>(null);
   const [isMpesa, setIsMpesa] = useState(false);
   const [momoSuccess, setMomoSuccess] = useState<Transaction | null>(null);
-
-  const { data: ratesData } = useExchangeRates();
-  const rates = ratesData?.rates;
-
-  const hasMobileMoney = country.paymentMethods.includes("mpesa") || country.paymentMethods.includes("mobilemoney");
-  const mobileMethodType = country.paymentMethods.includes("mpesa") ? "mpesa" : "mobilemoney";
-
-  useEffect(() => {
-    if (hasMobileMoney) {
-      setTab("mobilemoney");
-    } else {
-      setTab("card");
-    }
-    setMomoRef(null);
-    setMomoSuccess(null);
-  }, [country.code, hasMobileMoney]);
-
-  const convertedAmount = convertAmount(rates, country.currency);
-  const formattedAmount = formatAmount(convertedAmount, country.currency);
 
   if (momoSuccess) return <SuccessView tx={momoSuccess} />;
   if (momoRef) return (
@@ -553,58 +440,49 @@ function PaymentForm() {
     <div className="glass-panel p-8 md:p-10 glow-box relative">
       <CornerDeco />
 
-      <div className="mb-8 border-b border-primary/20 pb-6 space-y-6">
-        <CountrySelector selected={country} onChange={setCountry} />
-
-        <div className="text-center">
-          <h2 className="text-2xl text-white font-semibold flex justify-center items-center gap-2">
-            <Zap className="w-6 h-6 text-primary" /> INITIALIZE UPLINK
-          </h2>
-          <div className="mt-4 flex flex-col items-center">
-            <span className="text-muted-foreground text-xs font-bold tracking-widest">REQUIRED DEPLOYMENT FEE</span>
-            <span className="text-4xl font-black text-primary glow-text mt-1">{formattedAmount}</span>
-            {country.currency !== "KES" && (
-              <span className="text-primary/40 text-xs font-mono mt-1">≈ {BASE_KES} KES</span>
-            )}
-          </div>
+      <div className="mb-8 border-b border-primary/20 pb-6 text-center">
+        <h2 className="text-2xl text-white font-semibold flex justify-center items-center gap-2">
+          <Zap className="w-6 h-6 text-primary" /> INITIALIZE UPLINK
+        </h2>
+        <div className="mt-4 flex flex-col items-center">
+          <span className="text-muted-foreground text-xs font-bold tracking-widest">REQUIRED DEPLOYMENT FEE</span>
+          <span className="text-4xl font-black text-primary glow-text mt-1">70.00 KES</span>
         </div>
       </div>
 
-      {hasMobileMoney && (
-        <div className="flex gap-0 mb-8 border border-primary/30">
-          <button
-            type="button"
-            onClick={() => setTab("mobilemoney")}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold tracking-widest transition-all ${
-              tab === "mobilemoney"
-                ? "bg-primary text-black"
-                : "text-primary/60 bg-transparent"
-            }`}
-          >
-            <Smartphone className="w-4 h-4" />
-            {mobileMethodType === "mpesa" ? "M-PESA" : "MOBILE MONEY"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab("card")}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold tracking-widest transition-all border-l border-primary/30 ${
-              tab === "card"
-                ? "bg-primary text-black"
-                : "text-primary/60 bg-transparent"
-            }`}
-          >
-            <CreditCard className="w-4 h-4" /> CARD
-          </button>
-        </div>
-      )}
+      <div className="flex gap-0 mb-8 border border-primary/30">
+        <button
+          type="button"
+          data-testid="tab-mpesa"
+          onClick={() => setTab("mobilemoney")}
+          className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold tracking-widest transition-all ${
+            tab === "mobilemoney"
+              ? "bg-primary text-black"
+              : "text-primary/60 bg-transparent"
+          }`}
+        >
+          <Smartphone className="w-4 h-4" /> MOBILE MONEY
+        </button>
+        <button
+          type="button"
+          data-testid="tab-card"
+          onClick={() => setTab("card")}
+          className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold tracking-widest transition-all border-l border-primary/30 ${
+            tab === "card"
+              ? "bg-primary text-black"
+              : "text-primary/60 bg-transparent"
+          }`}
+        >
+          <CreditCard className="w-4 h-4" /> CARD
+        </button>
+      </div>
 
-      {tab === "mobilemoney" && hasMobileMoney ? (
+      {tab === "mobilemoney" ? (
         <MobileMoneyForm
-          country={country}
           onSent={(ref, mpesa) => { setMomoRef(ref); setIsMpesa(mpesa); }}
         />
       ) : (
-        <CardPaymentForm country={country} />
+        <CardPaymentForm />
       )}
     </div>
   );

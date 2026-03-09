@@ -78,7 +78,7 @@ async function fetchRates(): Promise<Record<string, number>> {
 
   return {
     KES: 1, NGN: 10.73, GHS: 0.083, ZAR: 0.129, EGP: 0.388,
-    RWF: 11.29, XOF: 4.38, TZS: 185.0, UGX: 26.5,
+    RWF: 11.29, XOF: 4.38, TZS: 185.0, UGX: 26.5, USD: 0.0077,
   };
 }
 
@@ -106,7 +106,7 @@ export async function registerRoutes(
   app.get(api.payments.rates.path, async (_req, res) => {
     try {
       const rates = await fetchRates();
-      const currencies = ['KES', 'NGN', 'GHS', 'ZAR', 'EGP', 'RWF', 'XOF', 'TZS', 'UGX'];
+      const currencies = ['KES', 'NGN', 'GHS', 'ZAR', 'EGP', 'RWF', 'XOF', 'TZS', 'UGX', 'USD'];
       const filtered: Record<string, number> = {};
       for (const c of currencies) { if (rates[c]) filtered[c] = rates[c]; }
       res.status(200).json({ rates: filtered });

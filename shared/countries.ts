@@ -102,6 +102,15 @@ export const COUNTRIES: CountryConfig[] = [
     paymentMethods: ["card"],
     phonePlaceholder: "",
   },
+  {
+    code: "OTHER",
+    name: "Other",
+    currency: "USD",
+    flag: "🌍",
+    phonePrefix: "",
+    paymentMethods: ["card"],
+    phonePlaceholder: "",
+  },
 ];
 
 export const KENYA = COUNTRIES[0];

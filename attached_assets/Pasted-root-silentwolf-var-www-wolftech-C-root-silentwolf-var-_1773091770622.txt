@@ -1,0 +1,91 @@
+root@silentwolf:/var/www/wolftech# ^C
+root@silentwolf:/var/www/wolftech# pm2 logs wolftech --lines 30
+[TAILING] Tailing last 30 lines for [wolftech] process (change the value with --
+lines option)
+/root/.pm2/logs/wolftech-out.log last 30 lines:
+/root/.pm2/logs/wolftech-error.log last 30 lines:
+9|wolftech | age,field:a.errors[0].path.join(".")});console.error(a),i.status(50
+0).json({message:"Internal Server Error"})}}),e.get("/api/payments/mobilemoney/:
+reference",async(n,i)=>{try{let a=n.params.reference;if(!r)return i.status(500).
+json({message:"Payment gateway not configured."});let s=await Ys({hostname:"api.
+paystack.co",port:443,path:`/charge/${encodeURIComponent(a)}`,method:"GET",heade
+rs:{Authorization:`Bearer ${r}`}}),o=s.data?.status,l=s.data?.message,u=["succes
+s","failed","abandoned","timeout"],c=["pay_offline","pending","send_pin","send_o
+tp"];if(s.status&&o==="success"){let d=await Yt.updateTransactionStatus(a,"succe
+ss");return i.status(200).json({...d,psMessage:l})}let p=await Yt.getTransaction
+ByReference(a);if(!p)return i.status(404).json({message:"Transaction not found"}
+);if(o&&!c.includes(o)){let d=u.includes(o)?o:"failed",f=await Yt.updateTransact
+ionStatus(a,d);return i.status(200).json({...f,psMessage:l})}i.status(200).json(
+{...p,psMessage:l})}catch(a){console.error(a),i.status(500).json({message:"Inter
+nal Server Error"})}}),e.post(er.payments.init.path,async(n,i)=>{try{let a=hw(n)
+;if(!mw(a,8,6e4))return i.status(429).json({message:"Too many requests. Please w
+ait a moment."});let s=er.payments.init.input.parse(n.body);if(!r)return i.statu
+s(500).json({message:"Payment gateway not configured."});let l=dw(s.country)?.cu
+rrency||"KES",u=await GP(l),c=JSON.stringify({email:s.email,amount:u,currency:l,
+callback_url:`${n.protocol}://${n.get("host")}/`}),p=await Ys({hostname:"api.pay
+stack.co",port:443,path:"/transaction/initialize",method:"POST",headers:{Authori
+zation:`Bearer ${r}`,"Content-Type":"application/json"}},c);p.status?(await Yt.c
+reateTransaction({email:s.email,amount:to,reference:p.data.reference,method:"car
+d"}),i.status(200).json({authorizationUrl:p.data.authorization_url,reference:p.d
+ata.reference})):i.status(500).json({message:p.message||"Failed to initialize pa
+yment"})}catch(a){if(a instanceof R.ZodError)return i.status(400).json({message:
+a.errors[0].message,field:a.errors[0].path.join(".")});console.error(a),i.status
+(500).json({message:"Internal Server Error"})}}),e.post(er.payments.verify.path,
+async(n,i)=>{try{let a=er.payments.verify.input.parse(n.body);if(!r)return i.sta
+tus(500).json({message:"Payment gateway not configured."});let s=await Yt.getTra
+nsactionByReference(a.reference);if(!s)return i.status(404).json({message:"Trans
+action not found"});if(s.status==="success")return i.status(200).json(s);let l=(
+await Ys({hostname:"api.paystack.co",port:443,path:`/transaction/verify/${encode
+URIComponent(a.reference)}`,method:"GET",headers:{Authorization:`Bearer ${r}`}})
+).data?.status,u=await Yt.updateTransactionStatus(a.reference,l==="success"?"suc
+cess":l||"failed");i.status(200).json(u)}catch(a){if(a instanceof R.ZodError)ret
+urn i.status(400).json({message:a.errors[0].message,field:a.errors[0].path.join(
+".")});console.error(a),i.status(500).json({message:"Internal Server Error"})}})
+,t}var xw=Rr(Tu(),1),bw=Rr(require("fs"),1),kd=Rr(require("path"),1);function ww
+(t){let e=kd.default.resolve(__dirname,"public");if(!bw.default.existsSync(e))th
+row new Error(`Could not find the build directory: ${e}, make sure to build the
+client first`);t.use(xw.default.static(e)),t.use("/{*path}",(r,n)=>{n.sendFile(k
+d.default.resolve(e,"index.html"))})}var Sw=require("http"),Nr=(0,ro.default)(),
+Cw=(0,Sw.createServer)(Nr);Nr.use(ro.default.json({verify:(t,e,r)=>{t.rawBody=r}
+}));Nr.use(ro.default.urlencoded({extended:!1}));function Ad(t,e="express"){let
+r=new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",second:
+"2-digit",hour12:!0});console.log(`${r} [${e}] ${t}`)}Nr.use((t,e,r)=>{let n=Dat
+e.now(),i=t.path,a,s=e.json;e.json=function(o,...l){return a=o,s.apply(e,[o,...l
+])},e.on("finish",()=>{let o=Date.now()-n;if(i.startsWith("/api")){let l=`${t.me
+thod} ${i} ${e.statusCode} in ${o}ms`;a&&(l+=` :: ${JSON.stringify(a)}`),Ad(l)}}
+),r()});(async()=>{await yw(Cw,Nr),Nr.use((e,r,n,i)=>{let a=e.status||e.statusCo
+de||500,s=e.message||"Internal Server Error";return console.error("Internal Serv
+er Error:",e),n.headersSent?i(e):n.status(a).json({message:s})}),ww(Nr);let t=pa
+rseInt(process.env.PORT||"5000",10);Cw.listen({port:t,host:"0.0.0.0",reusePort:!
+0},()=>{Ad(`serving on port ${t}`)})})();0&&(module.exports={log});
+9|wolftech | 
+
+
+
+
+
+
+
+
+
+
+
+
+
+9|wolftech | 
+9|wolftech | Error: DATABASE_URL must be set. Did you forget to provision a data
+base?
+9|wolftech |     at Object.<anonymous> (/var/www/wolftech/dist/index.cjs:74:9942
+5)
+9|wolftech |     at Module._compile (node:internal/modules/cjs/loader:1706:14)
+9|wolftech |     at Object..js (node:internal/modules/cjs/loader:1839:10)
+9|wolftech |     at Module.load (node:internal/modules/cjs/loader:1441:32)
+9|wolftech |     at Function._load (node:internal/modules/cjs/loader:1263:12)
+9|wolftech |     at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+9|wolftech |     at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+9|wolftech |     at Function.executeUserEntryPoint [as runMain] (node:internal/m
+odules/run_main:171:5)
+9|wolftech |     at node:internal/main/run_main_module:36:49
+9|wolftech | 
+9|wolftech | Node.js v22.22.0
+

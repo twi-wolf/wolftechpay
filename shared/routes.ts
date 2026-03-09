@@ -13,14 +13,44 @@ export const errorSchemas = {
 
 export const api = {
   payments: {
+    rates: {
+      method: 'GET' as const,
+      path: '/api/payments/rates' as const,
+      responses: {
+        200: z.object({ rates: z.record(z.number()) }),
+        500: z.object({ message: z.string() }),
+      },
+    },
     init: {
       method: 'POST' as const,
       path: '/api/payments/init' as const,
-      input: z.object({ email: z.string().email() }),
+      input: z.object({
+        email: z.string().email(),
+        country: z.string().length(2),
+      }),
       responses: {
         200: z.object({
           authorizationUrl: z.string(),
-          reference: z.string()
+          reference: z.string(),
+        }),
+        400: errorSchemas.validation,
+        500: errorSchemas.internal,
+      },
+    },
+    mobilemoney: {
+      method: 'POST' as const,
+      path: '/api/payments/mobilemoney' as const,
+      input: z.object({
+        email: z.string().email().optional(),
+        phone: z.string().min(9).max(15),
+        provider: z.string(),
+        country: z.string().length(2),
+      }),
+      responses: {
+        200: z.object({
+          reference: z.string(),
+          displayText: z.string(),
+          status: z.string(),
         }),
         400: errorSchemas.validation,
         500: errorSchemas.internal,
@@ -40,6 +70,15 @@ export const api = {
           status: z.string(),
         }),
         400: errorSchemas.validation,
+        500: errorSchemas.internal,
+      },
+    },
+    checkMobileMoney: {
+      method: 'GET' as const,
+      path: '/api/payments/mobilemoney/:reference' as const,
+      responses: {
+        200: z.custom<typeof transactions.$inferSelect>(),
+        404: z.object({ message: z.string() }),
         500: errorSchemas.internal,
       },
     },

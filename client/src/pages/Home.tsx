@@ -3,11 +3,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
+  useExchangeRates,
   useInitPayment,
-  useInitStkPush,
-  usePollStkStatus,
+  useInitMobileMoney,
+  usePollMobileMoneyStatus,
   useVerifyPaymentQuery,
 } from "@/hooks/use-payments";
+import { COUNTRIES, type CountryConfig } from "@shared/countries";
 import type { Transaction } from "@shared/schema";
 import {
   Terminal,
@@ -18,18 +20,24 @@ import {
   Loader2,
   CreditCard,
   Smartphone,
+  ChevronDown,
+  Globe,
 } from "lucide-react";
 
-const cardFormSchema = z.object({
-  email: z.string().email({ message: "INVALID EMAIL" }),
-});
-const stkFormSchema = z.object({
-  email: z.string().email({ message: "INVALID EMAIL" }),
-  phone: z.string().min(9, { message: "ENTER A VALID PHONE NUMBER" }),
-});
+const BASE_KES = 70;
 
-type CardFormValues = z.infer<typeof cardFormSchema>;
-type StkFormValues = z.infer<typeof stkFormSchema>;
+function convertAmount(rates: Record<string, number> | undefined, currency: string): number {
+  if (!rates || currency === "KES") return BASE_KES;
+  const rate = rates[currency] ?? 1;
+  return Math.round(BASE_KES * rate * 100) / 100;
+}
+
+function formatAmount(amount: number, currency: string): string {
+  if (currency === "XOF" || currency === "RWF") {
+    return `${Math.round(amount).toLocaleString()} ${currency}`;
+  }
+  return `${amount.toFixed(2)} ${currency}`;
+}
 
 function PageContainer({ children }: { children: React.ReactNode }) {
   return (
@@ -113,7 +121,69 @@ function SubmitButton({ pending, label, pendingLabel }: { pending: boolean; labe
   );
 }
 
-function CardPaymentForm() {
+function CountrySelector({
+  selected,
+  onChange,
+}: {
+  selected: CountryConfig;
+  onChange: (c: CountryConfig) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="space-y-2">
+      <label className="text-xs font-bold text-primary/80 tracking-widest flex items-center gap-2">
+        <Globe className="w-3 h-3" /> SELECT YOUR COUNTRY
+      </label>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="w-full bg-black/50 border border-primary/30 px-4 py-4 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-mono flex items-center justify-between"
+        >
+          <span className="flex items-center gap-3">
+            <span className="text-xl">{selected.flag}</span>
+            <span>{selected.name}</span>
+            <span className="text-primary/50 text-xs">({selected.currency})</span>
+          </span>
+          <ChevronDown className={`w-4 h-4 text-primary/60 transition-transform ${open ? "rotate-180" : ""}`} />
+        </button>
+        {open && (
+          <div className="absolute top-full left-0 right-0 z-50 bg-black border border-primary/30 max-h-60 overflow-y-auto shadow-2xl">
+            {COUNTRIES.map((c) => (
+              <button
+                key={c.code}
+                type="button"
+                onClick={() => { onChange(c); setOpen(false); }}
+                className={`w-full px-4 py-3 text-left font-mono flex items-center gap-3 transition-colors ${
+                  c.code === selected.code
+                    ? "bg-primary/20 text-primary"
+                    : "text-white/80 hover:bg-primary/10"
+                }`}
+              >
+                <span className="text-xl">{c.flag}</span>
+                <span className="flex-1">{c.name}</span>
+                <span className="text-xs text-primary/50">{c.currency}</span>
+                <span className="text-xs text-primary/30">
+                  {c.paymentMethods.includes("mpesa") || c.paymentMethods.includes("mobilemoney")
+                    ? "📱+💳"
+                    : "💳"}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const cardFormSchema = z.object({
+  email: z.string().email({ message: "INVALID EMAIL" }),
+});
+type CardFormValues = z.infer<typeof cardFormSchema>;
+
+function CardPaymentForm({ country }: { country: CountryConfig }) {
   const initPayment = useInitPayment();
   const form = useForm<CardFormValues>({
     resolver: zodResolver(cardFormSchema),
@@ -121,7 +191,7 @@ function CardPaymentForm() {
   });
 
   const onSubmit = (data: CardFormValues) => {
-    initPayment.mutate(data.email, {
+    initPayment.mutate({ email: data.email, country: country.code }, {
       onSuccess: (res) => { window.location.href = res.authorizationUrl; },
       onError: (err) => { form.setError("root", { message: err.message }); },
     });
@@ -151,38 +221,82 @@ function CardPaymentForm() {
   );
 }
 
-function StkPushForm({ onStkSent }: { onStkSent: (ref: string) => void }) {
-  const initStk = useInitStkPush();
-  const form = useForm<StkFormValues>({
-    resolver: zodResolver(stkFormSchema),
-    defaultValues: { email: "", phone: "" },
+const mobileMoneySchema = z.object({
+  phone: z.string().min(9, { message: "ENTER A VALID PHONE NUMBER" }),
+  provider: z.string().min(1, { message: "SELECT A PROVIDER" }),
+});
+type MobileMoneyFormValues = z.infer<typeof mobileMoneySchema>;
+
+function MobileMoneyForm({
+  country,
+  onSent,
+}: {
+  country: CountryConfig;
+  onSent: (ref: string, isMpesa: boolean) => void;
+}) {
+  const initMobileMoney = useInitMobileMoney();
+  const providers = country.momoProviders || [];
+  const isKenyaMpesa = country.code === "KE";
+
+  const form = useForm<MobileMoneyFormValues>({
+    resolver: zodResolver(mobileMoneySchema),
+    defaultValues: {
+      phone: "",
+      provider: providers[0]?.code || "",
+    },
   });
 
-  const onSubmit = (data: StkFormValues) => {
-    initStk.mutate({ email: data.email, phone: data.phone }, {
-      onSuccess: (res) => { onStkSent(res.reference); },
-      onError: (err) => { form.setError("root", { message: err.message }); },
-    });
+  useEffect(() => {
+    form.setValue("provider", providers[0]?.code || "");
+    form.setValue("phone", "");
+  }, [country.code]);
+
+  const onSubmit = (data: MobileMoneyFormValues) => {
+    initMobileMoney.mutate(
+      {
+        phone: data.phone,
+        provider: data.provider,
+        country: country.code,
+      },
+      {
+        onSuccess: (res) => { onSent(res.reference, data.provider === "mpesa"); },
+        onError: (err) => { form.setError("root", { message: err.message }); },
+      }
+    );
   };
+
+  const selectedProvider = providers.find((p) => p.code === form.watch("provider"));
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-      <FormField label="OPERATOR EMAIL" error={form.formState.errors.email?.message}>
-        <input
-          {...form.register("email")}
-          data-testid="input-email-stk"
-          disabled={initStk.isPending}
-          placeholder="operator@system.net"
-          className="w-full bg-black/50 border border-primary/30 px-4 py-4 text-white placeholder:text-white/20 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-mono"
-        />
-      </FormField>
+      {providers.length > 1 && (
+        <FormField label="MOBILE MONEY PROVIDER" error={form.formState.errors.provider?.message}>
+          <div className="relative">
+            <select
+              {...form.register("provider")}
+              disabled={initMobileMoney.isPending}
+              className="w-full bg-black/50 border border-primary/30 px-4 py-4 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-mono appearance-none cursor-pointer"
+            >
+              {providers.map((p) => (
+                <option key={p.code} value={p.code} className="bg-black">
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/60 pointer-events-none" />
+          </div>
+        </FormField>
+      )}
 
-      <FormField label="M-PESA PHONE NUMBER" error={form.formState.errors.phone?.message}>
+      <FormField
+        label={isKenyaMpesa && selectedProvider?.code === "mpesa" ? "M-PESA PHONE NUMBER" : "MOBILE MONEY PHONE NUMBER"}
+        error={form.formState.errors.phone?.message}
+      >
         <input
           {...form.register("phone")}
-          data-testid="input-phone-stk"
-          disabled={initStk.isPending}
-          placeholder="0712 345 678 or +254712345678"
+          data-testid="input-phone-mobile"
+          disabled={initMobileMoney.isPending}
+          placeholder={country.phonePlaceholder}
           className="w-full bg-black/50 border border-primary/30 px-4 py-4 text-white placeholder:text-white/20 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-mono"
         />
       </FormField>
@@ -194,18 +308,28 @@ function StkPushForm({ onStkSent }: { onStkSent: (ref: string) => void }) {
         </div>
       )}
 
-      <SubmitButton pending={initStk.isPending} label="SEND STK PUSH" pendingLabel="SENDING REQUEST..." />
+      <SubmitButton
+        pending={initMobileMoney.isPending}
+        label={isKenyaMpesa && selectedProvider?.code === "mpesa" ? "SEND STK PUSH" : "AUTHORIZE PAYMENT"}
+        pendingLabel="SENDING REQUEST..."
+      />
     </form>
   );
 }
 
-function StkWaitingView({ reference, onSuccess }: { reference: string; onSuccess: (tx: Transaction) => void }) {
-  const { data } = usePollStkStatus(reference, true);
+function MobileMoneyWaitingView({
+  reference,
+  isMpesa,
+  onSuccess,
+}: {
+  reference: string;
+  isMpesa: boolean;
+  onSuccess: (tx: Transaction) => void;
+}) {
+  const { data } = usePollMobileMoneyStatus(reference, true);
 
   useEffect(() => {
-    if (data?.status === "success") {
-      onSuccess(data);
-    }
+    if (data?.status === "success") onSuccess(data);
   }, [data, onSuccess]);
 
   const isFailed = data?.status === "failed";
@@ -217,7 +341,7 @@ function StkWaitingView({ reference, onSuccess }: { reference: string; onSuccess
         <>
           <AlertTriangle className="w-16 h-16 text-destructive" />
           <h2 className="text-xl text-destructive font-bold tracking-widest">PAYMENT DECLINED</h2>
-          <p className="text-muted-foreground font-mono text-sm">The M-Pesa request was cancelled or timed out.</p>
+          <p className="text-muted-foreground font-mono text-sm">The payment request was cancelled or timed out.</p>
           <button
             onClick={() => window.location.reload()}
             className="border border-primary/50 text-primary px-6 py-3 font-bold tracking-widest"
@@ -233,9 +357,13 @@ function StkWaitingView({ reference, onSuccess }: { reference: string; onSuccess
             <Smartphone className="w-16 h-16 text-primary animate-pulse relative z-10" />
           </div>
           <div>
-            <h2 className="text-xl text-primary font-bold tracking-widest animate-pulse">AWAITING M-PESA</h2>
+            <h2 className="text-xl text-primary font-bold tracking-widest animate-pulse">
+              {isMpesa ? "AWAITING M-PESA" : "AWAITING AUTHORIZATION"}
+            </h2>
             <p className="text-muted-foreground text-sm font-mono mt-2">
-              Check your phone for an STK push prompt and enter your PIN.
+              {isMpesa
+                ? "Check your phone for an STK push prompt and enter your PIN."
+                : "Open your mobile money app and authorize the payment."}
             </p>
             <p className="text-primary/50 text-xs font-mono mt-3">REF: {reference}</p>
           </div>
@@ -346,61 +474,99 @@ function VerificationView({ reference }: { reference: string }) {
   return null;
 }
 
-type Tab = "card" | "mpesa";
+type Tab = "mobilemoney" | "card";
 
 function PaymentForm() {
-  const [tab, setTab] = useState<Tab>("mpesa");
-  const [stkRef, setStkRef] = useState<string | null>(null);
-  const [stkSuccess, setStkSuccess] = useState<Transaction | null>(null);
+  const [country, setCountry] = useState<CountryConfig>(COUNTRIES[0]);
+  const [tab, setTab] = useState<Tab>("mobilemoney");
+  const [momoRef, setMomoRef] = useState<string | null>(null);
+  const [isMpesa, setIsMpesa] = useState(false);
+  const [momoSuccess, setMomoSuccess] = useState<Transaction | null>(null);
 
-  if (stkSuccess) return <SuccessView tx={stkSuccess} />;
-  if (stkRef) return <StkWaitingView reference={stkRef} onSuccess={setStkSuccess} />;
+  const { data: ratesData } = useExchangeRates();
+  const rates = ratesData?.rates;
+
+  const hasMobileMoney = country.paymentMethods.includes("mpesa") || country.paymentMethods.includes("mobilemoney");
+  const mobileMethodType = country.paymentMethods.includes("mpesa") ? "mpesa" : "mobilemoney";
+
+  useEffect(() => {
+    if (hasMobileMoney) {
+      setTab("mobilemoney");
+    } else {
+      setTab("card");
+    }
+    setMomoRef(null);
+    setMomoSuccess(null);
+  }, [country.code, hasMobileMoney]);
+
+  const convertedAmount = convertAmount(rates, country.currency);
+  const formattedAmount = formatAmount(convertedAmount, country.currency);
+
+  if (momoSuccess) return <SuccessView tx={momoSuccess} />;
+  if (momoRef) return (
+    <MobileMoneyWaitingView
+      reference={momoRef}
+      isMpesa={isMpesa}
+      onSuccess={setMomoSuccess}
+    />
+  );
 
   return (
     <div className="glass-panel p-8 md:p-10 glow-box relative">
       <CornerDeco />
 
-      <div className="mb-8 border-b border-primary/20 pb-6 text-center">
-        <h2 className="text-2xl text-white font-semibold flex justify-center items-center gap-2">
-          <Zap className="w-6 h-6 text-primary" /> INITIALIZE UPLINK
-        </h2>
-        <div className="mt-4 flex flex-col items-center">
-          <span className="text-muted-foreground text-xs font-bold tracking-widest">REQUIRED DEPLOYMENT FEE</span>
-          <span className="text-4xl font-black text-primary glow-text mt-1">70.00 KES</span>
+      <div className="mb-8 border-b border-primary/20 pb-6 space-y-6">
+        <CountrySelector selected={country} onChange={setCountry} />
+
+        <div className="text-center">
+          <h2 className="text-2xl text-white font-semibold flex justify-center items-center gap-2">
+            <Zap className="w-6 h-6 text-primary" /> INITIALIZE UPLINK
+          </h2>
+          <div className="mt-4 flex flex-col items-center">
+            <span className="text-muted-foreground text-xs font-bold tracking-widest">REQUIRED DEPLOYMENT FEE</span>
+            <span className="text-4xl font-black text-primary glow-text mt-1">{formattedAmount}</span>
+            {country.currency !== "KES" && (
+              <span className="text-primary/40 text-xs font-mono mt-1">≈ {BASE_KES} KES</span>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="flex gap-0 mb-8 border border-primary/30">
-        <button
-          type="button"
-          data-testid="tab-mpesa"
-          onClick={() => setTab("mpesa")}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold tracking-widest transition-all ${
-            tab === "mpesa"
-              ? "bg-primary text-black"
-              : "text-primary/60 bg-transparent"
-          }`}
-        >
-          <Smartphone className="w-4 h-4" /> M-PESA
-        </button>
-        <button
-          type="button"
-          data-testid="tab-card"
-          onClick={() => setTab("card")}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold tracking-widest transition-all border-l border-primary/30 ${
-            tab === "card"
-              ? "bg-primary text-black"
-              : "text-primary/60 bg-transparent"
-          }`}
-        >
-          <CreditCard className="w-4 h-4" /> CARD
-        </button>
-      </div>
+      {hasMobileMoney && (
+        <div className="flex gap-0 mb-8 border border-primary/30">
+          <button
+            type="button"
+            onClick={() => setTab("mobilemoney")}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold tracking-widest transition-all ${
+              tab === "mobilemoney"
+                ? "bg-primary text-black"
+                : "text-primary/60 bg-transparent"
+            }`}
+          >
+            <Smartphone className="w-4 h-4" />
+            {mobileMethodType === "mpesa" ? "M-PESA" : "MOBILE MONEY"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("card")}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold tracking-widest transition-all border-l border-primary/30 ${
+              tab === "card"
+                ? "bg-primary text-black"
+                : "text-primary/60 bg-transparent"
+            }`}
+          >
+            <CreditCard className="w-4 h-4" /> CARD
+          </button>
+        </div>
+      )}
 
-      {tab === "mpesa" ? (
-        <StkPushForm onStkSent={setStkRef} />
+      {tab === "mobilemoney" && hasMobileMoney ? (
+        <MobileMoneyForm
+          country={country}
+          onSent={(ref, mpesa) => { setMomoRef(ref); setIsMpesa(mpesa); }}
+        />
       ) : (
-        <CardPaymentForm />
+        <CardPaymentForm country={country} />
       )}
     </div>
   );

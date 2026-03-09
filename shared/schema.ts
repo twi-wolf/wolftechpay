@@ -7,6 +7,7 @@ export const transactions = pgTable("transactions", {
   email: varchar("email", { length: 255 }).notNull(),
   amount: integer("amount").notNull(),
   reference: varchar("reference", { length: 255 }).notNull(),
+  method: varchar("method", { length: 50 }).notNull().default("card"),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -15,7 +16,8 @@ export const insertTransactionSchema = createInsertSchema(transactions).omit({
   id: true,
   createdAt: true,
   status: true,
-  reference: true
+  reference: true,
+  method: true,
 });
 
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;

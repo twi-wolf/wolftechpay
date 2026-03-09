@@ -1,15 +1,15 @@
 import { db } from "./db";
-import { transactions, type Transaction, type InsertTransaction } from "@shared/schema";
+import { transactions, type Transaction } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 export interface IStorage {
-  createTransaction(transaction: InsertTransaction & { amount: number, reference: string }): Promise<Transaction>;
+  createTransaction(transaction: { email: string; amount: number; reference: string; method: string }): Promise<Transaction>;
   getTransactionByReference(reference: string): Promise<Transaction | undefined>;
   updateTransactionStatus(reference: string, status: string): Promise<Transaction | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
-  async createTransaction(transaction: InsertTransaction & { amount: number, reference: string }): Promise<Transaction> {
+  async createTransaction(transaction: { email: string; amount: number; reference: string; method: string }): Promise<Transaction> {
     const [newTransaction] = await db.insert(transactions).values(transaction).returning();
     return newTransaction;
   }

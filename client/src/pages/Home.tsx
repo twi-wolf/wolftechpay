@@ -542,6 +542,22 @@ function PaymentForm() {
         </div>
       </div>
 
+      <div className="mb-8 border border-primary/20 bg-primary/5 p-4 space-y-3">
+        <p className="text-primary text-xs font-bold tracking-widest text-center mb-3">HOW IT WORKS</p>
+        <div className="flex items-start gap-3">
+          <span className="text-primary font-black font-mono text-sm shrink-0 w-5">01</span>
+          <p className="text-muted-foreground text-xs font-mono leading-relaxed">Complete the payment below using mobile money or card.</p>
+        </div>
+        <div className="flex items-start gap-3">
+          <span className="text-primary font-black font-mono text-sm shrink-0 w-5">02</span>
+          <p className="text-muted-foreground text-xs font-mono leading-relaxed">Take a screenshot of the payment confirmation JSON shown after success.</p>
+        </div>
+        <div className="flex items-start gap-3">
+          <span className="text-primary font-black font-mono text-sm shrink-0 w-5">03</span>
+          <p className="text-muted-foreground text-xs font-mono leading-relaxed">Send the screenshot to <span className="text-primary font-bold">Silent Wolf</span> along with your <span className="text-primary font-bold">Bot Session ID</span>.</p>
+        </div>
+      </div>
+
       {isKenya && (
         <div className="flex gap-0 mb-8 border border-primary/30">
           <button

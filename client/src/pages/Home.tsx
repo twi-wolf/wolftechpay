@@ -317,6 +317,43 @@ function MobileMoneyForm({
   );
 }
 
+type TerminalState = "failed" | "abandoned" | "timeout" | null;
+
+function TerminalView({ state, psMessage }: { state: TerminalState; psMessage?: string }) {
+  const config: Record<NonNullable<TerminalState>, { title: string; detail: string }> = {
+    abandoned: {
+      title: "REQUEST CANCELLED",
+      detail: "You dismissed the payment prompt. No charge was made.",
+    },
+    timeout: {
+      title: "REQUEST TIMED OUT",
+      detail: "The 3-minute window expired before authorization. No charge was made.",
+    },
+    failed: {
+      title: "PAYMENT FAILED",
+      detail: psMessage || "The payment could not be completed.",
+    },
+  };
+  const c = config[state!] ?? config.failed;
+
+  return (
+    <>
+      <AlertTriangle className="w-16 h-16 text-destructive" />
+      <div>
+        <h2 className="text-xl text-destructive font-bold tracking-widest">{c.title}</h2>
+        <p className="text-muted-foreground font-mono text-sm mt-2">{c.detail}</p>
+      </div>
+      <button
+        onClick={() => window.location.reload()}
+        className="border border-primary/50 text-primary px-6 py-3 font-bold tracking-widest"
+        data-testid="button-retry"
+      >
+        TRY AGAIN
+      </button>
+    </>
+  );
+}
+
 function MobileMoneyWaitingView({
   reference,
   isMpesa,
@@ -329,27 +366,22 @@ function MobileMoneyWaitingView({
   const { data } = usePollMobileMoneyStatus(reference, true);
 
   useEffect(() => {
-    if (data?.status === "success") onSuccess(data);
+    if (data?.status === "success") onSuccess(data as Transaction);
   }, [data, onSuccess]);
 
-  const isFailed = data?.status === "failed";
+  const status = data?.status;
+  const psMessage = (data as any)?.psMessage as string | undefined;
+  const terminalState: TerminalState =
+    status === "abandoned" ? "abandoned"
+    : status === "timeout" ? "timeout"
+    : status === "failed" ? "failed"
+    : null;
 
   return (
     <div className="glass-panel p-10 text-center glow-box flex flex-col items-center justify-center space-y-6 relative">
       <CornerDeco />
-      {isFailed ? (
-        <>
-          <AlertTriangle className="w-16 h-16 text-destructive" />
-          <h2 className="text-xl text-destructive font-bold tracking-widest">PAYMENT DECLINED</h2>
-          <p className="text-muted-foreground font-mono text-sm">The payment request was cancelled or timed out.</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="border border-primary/50 text-primary px-6 py-3 font-bold tracking-widest"
-            data-testid="button-retry"
-          >
-            TRY AGAIN
-          </button>
-        </>
+      {terminalState ? (
+        <TerminalView state={terminalState} psMessage={psMessage} />
       ) : (
         <>
           <div className="relative">

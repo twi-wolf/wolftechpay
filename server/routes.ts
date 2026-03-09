@@ -153,7 +153,8 @@ export async function registerRoutes(
       const currency = country?.currency || 'KES';
       const amountInSmallestUnit = await convertFromKES(BASE_AMOUNT_KES, currency);
       const phone = normalizePhone(input.phone, input.country);
-      const email = input.email || `user.${phone}@wolftech.pay`;
+      const cleanPhone = phone.replace(/\D/g, '');
+      const email = input.email || `user.${cleanPhone}@wolftech.pay`;
 
       const body = JSON.stringify({
         email,
@@ -207,20 +208,27 @@ export async function registerRoutes(
         headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` },
       });
 
-      if (response.status && response.data.status === 'success') {
-        const updated = await storage.updateTransactionStatus(reference, "success");
-        return res.status(200).json(updated);
+      const psStatus = response.data?.status as string | undefined;
+      const psMessage = response.data?.message as string | undefined;
+
+      const TERMINAL_STATUSES = ['success', 'failed', 'abandoned', 'timeout'];
+      const PENDING_STATUSES = ['pay_offline', 'pending', 'send_pin', 'send_otp'];
+
+      if (response.status && psStatus === 'success') {
+        const updated = await storage.updateTransactionStatus(reference, 'success');
+        return res.status(200).json({ ...updated, psMessage });
       }
 
       const tx = await storage.getTransactionByReference(reference);
       if (!tx) return res.status(404).json({ message: "Transaction not found" });
 
-      const psStatus = response.data?.status;
-      if (psStatus && psStatus !== 'pay_offline' && psStatus !== 'pending') {
-        await storage.updateTransactionStatus(reference, psStatus);
+      if (psStatus && !PENDING_STATUSES.includes(psStatus)) {
+        const newStatus = TERMINAL_STATUSES.includes(psStatus) ? psStatus : 'failed';
+        const updated = await storage.updateTransactionStatus(reference, newStatus);
+        return res.status(200).json({ ...updated, psMessage });
       }
 
-      res.status(200).json(tx);
+      res.status(200).json({ ...tx, psMessage });
     } catch (err) {
       console.error(err);
       res.status(500).json({ message: "Internal Server Error" });
@@ -288,20 +296,27 @@ export async function registerRoutes(
         headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` },
       });
 
-      if (response.status && response.data.status === 'success') {
-        const updated = await storage.updateTransactionStatus(reference, "success");
-        return res.status(200).json(updated);
+      const psStatus2 = response.data?.status as string | undefined;
+      const psMessage2 = response.data?.message as string | undefined;
+
+      const TERMINAL_STATUSES = ['success', 'failed', 'abandoned', 'timeout'];
+      const PENDING_STATUSES = ['pay_offline', 'pending', 'send_pin', 'send_otp'];
+
+      if (response.status && psStatus2 === 'success') {
+        const updated = await storage.updateTransactionStatus(reference, 'success');
+        return res.status(200).json({ ...updated, psMessage: psMessage2 });
       }
 
       const tx = await storage.getTransactionByReference(reference);
       if (!tx) return res.status(404).json({ message: "Transaction not found" });
 
-      const psStatus = response.data?.status;
-      if (psStatus && psStatus !== 'pay_offline' && psStatus !== 'pending') {
-        await storage.updateTransactionStatus(reference, psStatus);
+      if (psStatus2 && !PENDING_STATUSES.includes(psStatus2)) {
+        const newStatus = TERMINAL_STATUSES.includes(psStatus2) ? psStatus2 : 'failed';
+        const updated = await storage.updateTransactionStatus(reference, newStatus);
+        return res.status(200).json({ ...updated, psMessage: psMessage2 });
       }
 
-      res.status(200).json(tx);
+      res.status(200).json({ ...tx, psMessage: psMessage2 });
     } catch (err) {
       console.error(err);
       res.status(500).json({ message: "Internal Server Error" });

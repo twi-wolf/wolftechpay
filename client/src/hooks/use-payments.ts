@@ -63,7 +63,8 @@ export function usePollMobileMoneyStatus(reference: string | null, enabled: bool
     enabled: !!reference && enabled,
     refetchInterval: (query) => {
       const data = query.state.data as import("@shared/schema").Transaction | undefined;
-      if (data?.status === "success" || data?.status === "failed") return false;
+      const done = ["success", "failed", "abandoned", "timeout"];
+      if (data?.status && done.includes(data.status)) return false;
       return 3000;
     },
     refetchOnWindowFocus: false,

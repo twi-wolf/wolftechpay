@@ -1,13 +1,27 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "@shared/routes";
 
+export function useExchangeRates() {
+  return useQuery({
+    queryKey: [api.payments.rates.path],
+    queryFn: async () => {
+      const res = await fetch(api.payments.rates.path);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || "Failed to fetch rates");
+      return json as { rates: Record<string, number> };
+    },
+    staleTime: 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+}
+
 export function useInitPayment() {
   return useMutation({
-    mutationFn: async (email: string) => {
+    mutationFn: async ({ email, country }: { email: string; country: string }) => {
       const res = await fetch(api.payments.init.path, {
         method: api.payments.init.method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, country }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || "Failed to initialize payment gateway");

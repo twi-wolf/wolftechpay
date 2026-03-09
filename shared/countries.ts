@@ -16,16 +16,96 @@ export interface CountryConfig {
   phonePlaceholder: string;
 }
 
-export const KENYA: CountryConfig = {
-  code: "KE",
-  name: "Kenya",
-  currency: "KES",
-  flag: "🇰🇪",
-  phonePrefix: "+254",
-  paymentMethods: ["mpesa", "card"],
-  momoProviders: [
-    { code: "mpesa", name: "M-Pesa" },
-    { code: "atl", name: "Airtel Money" },
-  ],
-  phonePlaceholder: "0712 345 678 or +254712345678",
-};
+export const COUNTRIES: CountryConfig[] = [
+  {
+    code: "KE",
+    name: "Kenya",
+    currency: "KES",
+    flag: "🇰🇪",
+    phonePrefix: "+254",
+    paymentMethods: ["mpesa", "card"],
+    momoProviders: [
+      { code: "mpesa", name: "M-Pesa" },
+      { code: "atl", name: "Airtel Money" },
+    ],
+    phonePlaceholder: "0712 345 678 or +254712345678",
+  },
+  {
+    code: "NG",
+    name: "Nigeria",
+    currency: "NGN",
+    flag: "🇳🇬",
+    phonePrefix: "+234",
+    paymentMethods: ["card"],
+    phonePlaceholder: "",
+  },
+  {
+    code: "GH",
+    name: "Ghana",
+    currency: "GHS",
+    flag: "🇬🇭",
+    phonePrefix: "+233",
+    paymentMethods: ["card"],
+    phonePlaceholder: "",
+  },
+  {
+    code: "ZA",
+    name: "South Africa",
+    currency: "ZAR",
+    flag: "🇿🇦",
+    phonePrefix: "+27",
+    paymentMethods: ["card"],
+    phonePlaceholder: "",
+  },
+  {
+    code: "EG",
+    name: "Egypt",
+    currency: "EGP",
+    flag: "🇪🇬",
+    phonePrefix: "+20",
+    paymentMethods: ["card"],
+    phonePlaceholder: "",
+  },
+  {
+    code: "RW",
+    name: "Rwanda",
+    currency: "RWF",
+    flag: "🇷🇼",
+    phonePrefix: "+250",
+    paymentMethods: ["card"],
+    phonePlaceholder: "",
+  },
+  {
+    code: "CI",
+    name: "Côte d'Ivoire",
+    currency: "XOF",
+    flag: "🇨🇮",
+    phonePrefix: "+225",
+    paymentMethods: ["card"],
+    phonePlaceholder: "",
+  },
+  {
+    code: "TZ",
+    name: "Tanzania",
+    currency: "TZS",
+    flag: "🇹🇿",
+    phonePrefix: "+255",
+    paymentMethods: ["card"],
+    phonePlaceholder: "",
+  },
+  {
+    code: "UG",
+    name: "Uganda",
+    currency: "UGX",
+    flag: "🇺🇬",
+    phonePrefix: "+256",
+    paymentMethods: ["card"],
+    phonePlaceholder: "",
+  },
+];
+
+export const KENYA = COUNTRIES[0];
+
+export function getCountry(code: string): CountryConfig | undefined {
+  return COUNTRIES.find((c) => c.code === code);
+}

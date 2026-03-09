@@ -2,6 +2,7 @@ import type { Express } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
+import { getCountry } from "@shared/countries";
 import { z } from "zod";
 import https from "https";
 
@@ -21,8 +22,54 @@ function paystackRequest(options: https.RequestOptions, body?: string): Promise<
   });
 }
 
-const AMOUNT_KES = 70;
-const AMOUNT_CENTS = AMOUNT_KES * 100;
+const BASE_AMOUNT_KES = 70;
+
+let cachedRates: Record<string, number> | null = null;
+let ratesCachedAt = 0;
+const RATES_TTL_MS = 60 * 60 * 1000;
+
+async function fetchRates(): Promise<Record<string, number>> {
+  const now = Date.now();
+  if (cachedRates && now - ratesCachedAt < RATES_TTL_MS) return cachedRates;
+
+  try {
+    const result = await new Promise<any>((resolve, reject) => {
+      const req = https.request({
+        hostname: 'open.er-api.com',
+        path: '/v6/latest/KES',
+        method: 'GET',
+      }, (res) => {
+        let data = '';
+        res.on('data', (chunk) => { data += chunk; });
+        res.on('end', () => {
+          try { resolve(JSON.parse(data)); }
+          catch (e) { reject(new Error('Invalid JSON from exchange rate API')); }
+        });
+      });
+      req.on('error', reject);
+      req.end();
+    });
+
+    if (result.result === 'success' && result.rates) {
+      cachedRates = result.rates;
+      ratesCachedAt = now;
+      return cachedRates!;
+    }
+  } catch (err) {
+    console.error('Failed to fetch exchange rates:', err);
+  }
+
+  return {
+    KES: 1, NGN: 10.73, GHS: 0.083, ZAR: 0.129, EGP: 0.388,
+    RWF: 11.29, XOF: 4.38, TZS: 185.0, UGX: 26.5,
+  };
+}
+
+async function amountInCents(currency: string): Promise<number> {
+  const rates = await fetchRates();
+  const rate = rates[currency] ?? 1;
+  return Math.round(BASE_AMOUNT_KES * rate * 100);
+}
 
 function normalizeKenyanPhone(phone: string): string {
   let p = phone.replace(/\s+/g, '').replace(/^\+/, '');
@@ -38,6 +85,20 @@ export async function registerRoutes(
 
   const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 
+  // --- Exchange rates ---
+  app.get(api.payments.rates.path, async (_req, res) => {
+    try {
+      const rates = await fetchRates();
+      const currencies = ['KES', 'NGN', 'GHS', 'ZAR', 'EGP', 'RWF', 'XOF', 'TZS', 'UGX'];
+      const filtered: Record<string, number> = {};
+      for (const c of currencies) { if (rates[c]) filtered[c] = rates[c]; }
+      res.status(200).json({ rates: filtered });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Failed to fetch exchange rates' });
+    }
+  });
+
   // --- Mobile Money (M-Pesa / Airtel Kenya) ---
   app.post(api.payments.mobilemoney.path, async (req, res) => {
     try {
@@ -50,7 +111,7 @@ export async function registerRoutes(
 
       const body = JSON.stringify({
         email,
-        amount: AMOUNT_CENTS,
+        amount: BASE_AMOUNT_KES * 100,
         currency: "KES",
         mobile_money: { phone, provider: input.provider },
       });
@@ -71,7 +132,7 @@ export async function registerRoutes(
 
         await storage.createTransaction({
           email,
-          amount: AMOUNT_KES,
+          amount: BASE_AMOUNT_KES,
           reference: ref,
           method,
         });
@@ -134,10 +195,14 @@ export async function registerRoutes(
       const input = api.payments.init.input.parse(req.body);
       if (!PAYSTACK_SECRET_KEY) return res.status(500).json({ message: "Payment gateway not configured." });
 
+      const country = getCountry(input.country);
+      const currency = country?.currency || 'KES';
+      const cents = await amountInCents(currency);
+
       const body = JSON.stringify({
         email: input.email,
-        amount: AMOUNT_CENTS,
-        currency: "KES",
+        amount: cents,
+        currency,
         callback_url: `${req.protocol}://${req.get("host")}/`,
       });
 
@@ -152,7 +217,7 @@ export async function registerRoutes(
       if (response.status) {
         await storage.createTransaction({
           email: input.email,
-          amount: AMOUNT_KES,
+          amount: BASE_AMOUNT_KES,
           reference: response.data.reference,
           method: "card",
         });

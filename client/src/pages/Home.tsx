@@ -3,12 +3,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
+  useExchangeRates,
   useInitPayment,
   useInitMobileMoney,
   usePollMobileMoneyStatus,
   useVerifyPaymentQuery,
 } from "@/hooks/use-payments";
-import { KENYA } from "@shared/countries";
+import { COUNTRIES, KENYA, type CountryConfig } from "@shared/countries";
 import type { Transaction } from "@shared/schema";
 import {
   Terminal,
@@ -20,7 +21,22 @@ import {
   CreditCard,
   Smartphone,
   ChevronDown,
+  Globe,
 } from "lucide-react";
+
+const BASE_KES = 70;
+
+function convertAmount(rates: Record<string, number> | undefined, currency: string): number {
+  if (!rates || currency === "KES") return BASE_KES;
+  return Math.round(BASE_KES * (rates[currency] ?? 1) * 100) / 100;
+}
+
+function formatAmount(amount: number, currency: string): string {
+  if (currency === "XOF" || currency === "RWF" || currency === "TZS" || currency === "UGX") {
+    return `${Math.round(amount).toLocaleString()} ${currency}`;
+  }
+  return `${amount.toFixed(2)} ${currency}`;
+}
 
 function PageContainer({ children }: { children: React.ReactNode }) {
   return (
@@ -104,12 +120,67 @@ function SubmitButton({ pending, label, pendingLabel }: { pending: boolean; labe
   );
 }
 
+function CountrySelector({
+  selected,
+  onChange,
+}: {
+  selected: CountryConfig;
+  onChange: (c: CountryConfig) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="space-y-2">
+      <label className="text-xs font-bold text-primary/80 tracking-widest flex items-center gap-2">
+        <Globe className="w-3 h-3" /> SELECT YOUR COUNTRY
+      </label>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="w-full bg-black/50 border border-primary/30 px-4 py-3 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-mono flex items-center justify-between"
+        >
+          <span className="flex items-center gap-3">
+            <span className="text-xl">{selected.flag}</span>
+            <span>{selected.name}</span>
+            <span className="text-primary/50 text-xs">({selected.currency})</span>
+          </span>
+          <ChevronDown className={`w-4 h-4 text-primary/60 transition-transform ${open ? "rotate-180" : ""}`} />
+        </button>
+        {open && (
+          <div className="absolute top-full left-0 right-0 z-50 bg-black border border-primary/30 max-h-60 overflow-y-auto shadow-2xl">
+            {COUNTRIES.map((c) => (
+              <button
+                key={c.code}
+                type="button"
+                onClick={() => { onChange(c); setOpen(false); }}
+                className={`w-full px-4 py-3 text-left font-mono flex items-center gap-3 transition-colors ${
+                  c.code === selected.code
+                    ? "bg-primary/20 text-primary"
+                    : "text-white/80 hover:bg-primary/10"
+                }`}
+              >
+                <span className="text-xl">{c.flag}</span>
+                <span className="flex-1">{c.name}</span>
+                <span className="text-xs text-primary/50">{c.currency}</span>
+                <span className="text-xs text-primary/30">
+                  {c.code === "KE" ? "📱+💳" : "💳"}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const cardFormSchema = z.object({
   email: z.string().email({ message: "INVALID EMAIL" }),
 });
 type CardFormValues = z.infer<typeof cardFormSchema>;
 
-function CardPaymentForm() {
+function CardPaymentForm({ country }: { country: CountryConfig }) {
   const initPayment = useInitPayment();
   const form = useForm<CardFormValues>({
     resolver: zodResolver(cardFormSchema),
@@ -117,7 +188,7 @@ function CardPaymentForm() {
   });
 
   const onSubmit = (data: CardFormValues) => {
-    initPayment.mutate(data.email, {
+    initPayment.mutate({ email: data.email, country: country.code }, {
       onSuccess: (res) => { window.location.href = res.authorizationUrl; },
       onError: (err) => { form.setError("root", { message: err.message }); },
     });
@@ -422,10 +493,24 @@ function VerificationView({ reference }: { reference: string }) {
 type Tab = "mobilemoney" | "card";
 
 function PaymentForm() {
+  const [country, setCountry] = useState<CountryConfig>(KENYA);
   const [tab, setTab] = useState<Tab>("mobilemoney");
   const [momoRef, setMomoRef] = useState<string | null>(null);
   const [isMpesa, setIsMpesa] = useState(false);
   const [momoSuccess, setMomoSuccess] = useState<Transaction | null>(null);
+
+  const { data: ratesData } = useExchangeRates();
+  const rates = ratesData?.rates;
+
+  const isKenya = country.code === "KE";
+  const convertedAmount = convertAmount(rates, country.currency);
+  const formattedAmount = formatAmount(convertedAmount, country.currency);
+
+  useEffect(() => {
+    setTab(isKenya ? "mobilemoney" : "card");
+    setMomoRef(null);
+    setMomoSuccess(null);
+  }, [country.code, isKenya]);
 
   if (momoSuccess) return <SuccessView tx={momoSuccess} />;
   if (momoRef) return (
@@ -440,49 +525,54 @@ function PaymentForm() {
     <div className="glass-panel p-8 md:p-10 glow-box relative">
       <CornerDeco />
 
-      <div className="mb-8 border-b border-primary/20 pb-6 text-center">
-        <h2 className="text-2xl text-white font-semibold flex justify-center items-center gap-2">
-          <Zap className="w-6 h-6 text-primary" /> INITIALIZE UPLINK
-        </h2>
-        <div className="mt-4 flex flex-col items-center">
-          <span className="text-muted-foreground text-xs font-bold tracking-widest">REQUIRED DEPLOYMENT FEE</span>
-          <span className="text-4xl font-black text-primary glow-text mt-1">70.00 KES</span>
+      <div className="mb-8 border-b border-primary/20 pb-6 space-y-5">
+        <CountrySelector selected={country} onChange={setCountry} />
+
+        <div className="text-center">
+          <h2 className="text-2xl text-white font-semibold flex justify-center items-center gap-2">
+            <Zap className="w-6 h-6 text-primary" /> INITIALIZE UPLINK
+          </h2>
+          <div className="mt-4 flex flex-col items-center">
+            <span className="text-muted-foreground text-xs font-bold tracking-widest">REQUIRED DEPLOYMENT FEE</span>
+            <span className="text-4xl font-black text-primary glow-text mt-1">{formattedAmount}</span>
+            {!isKenya && (
+              <span className="text-primary/40 text-xs font-mono mt-1">≈ {BASE_KES} KES</span>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="flex gap-0 mb-8 border border-primary/30">
-        <button
-          type="button"
-          data-testid="tab-mpesa"
-          onClick={() => setTab("mobilemoney")}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold tracking-widest transition-all ${
-            tab === "mobilemoney"
-              ? "bg-primary text-black"
-              : "text-primary/60 bg-transparent"
-          }`}
-        >
-          <Smartphone className="w-4 h-4" /> MOBILE MONEY
-        </button>
-        <button
-          type="button"
-          data-testid="tab-card"
-          onClick={() => setTab("card")}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold tracking-widest transition-all border-l border-primary/30 ${
-            tab === "card"
-              ? "bg-primary text-black"
-              : "text-primary/60 bg-transparent"
-          }`}
-        >
-          <CreditCard className="w-4 h-4" /> CARD
-        </button>
-      </div>
+      {isKenya && (
+        <div className="flex gap-0 mb-8 border border-primary/30">
+          <button
+            type="button"
+            data-testid="tab-mpesa"
+            onClick={() => setTab("mobilemoney")}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold tracking-widest transition-all ${
+              tab === "mobilemoney" ? "bg-primary text-black" : "text-primary/60 bg-transparent"
+            }`}
+          >
+            <Smartphone className="w-4 h-4" /> MOBILE MONEY
+          </button>
+          <button
+            type="button"
+            data-testid="tab-card"
+            onClick={() => setTab("card")}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold tracking-widest transition-all border-l border-primary/30 ${
+              tab === "card" ? "bg-primary text-black" : "text-primary/60 bg-transparent"
+            }`}
+          >
+            <CreditCard className="w-4 h-4" /> CARD
+          </button>
+        </div>
+      )}
 
-      {tab === "mobilemoney" ? (
+      {isKenya && tab === "mobilemoney" ? (
         <MobileMoneyForm
           onSent={(ref, mpesa) => { setMomoRef(ref); setIsMpesa(mpesa); }}
         />
       ) : (
-        <CardPaymentForm />
+        <CardPaymentForm country={country} />
       )}
     </div>
   );

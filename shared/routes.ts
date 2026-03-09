@@ -13,10 +13,21 @@ export const errorSchemas = {
 
 export const api = {
   payments: {
+    rates: {
+      method: 'GET' as const,
+      path: '/api/payments/rates' as const,
+      responses: {
+        200: z.object({ rates: z.record(z.number()) }),
+        500: z.object({ message: z.string() }),
+      },
+    },
     init: {
       method: 'POST' as const,
       path: '/api/payments/init' as const,
-      input: z.object({ email: z.string().email() }),
+      input: z.object({
+        email: z.string().email(),
+        country: z.string().length(2),
+      }),
       responses: {
         200: z.object({
           authorizationUrl: z.string(),

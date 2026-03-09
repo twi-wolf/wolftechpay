@@ -1,0 +1,195 @@
+root@silentwolf:/var/www/wolftech# sudo ss -tlnp | grep LISTEN
+LISTEN 0      4096   62.171.170.186:21567      0.0.0.0:*    users:(("docker-prox
+y",pid=3607490,fd=8))
+
+LISTEN 0      4096   62.171.170.186:21565      0.0.0.0:*    users:(("docker-prox
+y",pid=3605766,fd=8))
+
+LISTEN 0      4096   62.171.170.186:21585      0.0.0.0:*    users:(("docker-prox
+y",pid=3608616,fd=8))
+
+LISTEN 0      4096   62.171.170.186:21583      0.0.0.0:*    users:(("docker-prox
+y",pid=3606336,fd=8))
+
+LISTEN 0      4096   62.171.170.186:21580      0.0.0.0:*    users:(("docker-prox
+y",pid=3608406,fd=8))
+
+LISTEN 0      4096   62.171.170.186:21581      0.0.0.0:*    users:(("docker-prox
+y",pid=3605548,fd=8))
+
+LISTEN 0      4096   62.171.170.186:21570      0.0.0.0:*    users:(("docker-prox
+y",pid=3608274,fd=8))
+
+LISTEN 0      4096   62.171.170.186:21568      0.0.0.0:*    users:(("docker-prox
+y",pid=3607203,fd=8))
+
+LISTEN 0      4096   62.171.170.186:21569      0.0.0.0:*    users:(("docker-prox
+y",pid=3608065,fd=8))
+
+LISTEN 0      511           0.0.0.0:5000       0.0.0.0:*    users:(("node",pid=3
+614109,fd=22))
+
+LISTEN 0      511           0.0.0.0:5000       0.0.0.0:*    users:(("node /var/w
+ww/w",pid=3554403,fd=23))
+
+LISTEN 0      511           0.0.0.0:5000       0.0.0.0:*    users:(("node",pid=1
+859300,fd=21))
+
+LISTEN 0      511           0.0.0.0:80         0.0.0.0:*    users:(("nginx",pid=
+1821285,fd=8),("nginx",pid=1821284,fd=8),("nginx",pid=1821283,fd=8),("nginx",pid
+=1821282,fd=8),("nginx",pid=966,fd=8))
+LISTEN 0      4096   62.171.170.186:26583      0.0.0.0:*    users:(("docker-prox
+y",pid=3610997,fd=8))
+
+LISTEN 0      128           0.0.0.0:22         0.0.0.0:*    users:(("sshd",pid=7
+37,fd=6))
+
+LISTEN 0      200         127.0.0.1:5432       0.0.0.0:*    users:(("postgres",p
+id=810,fd=7))
+
+LISTEN 0      511           0.0.0.0:443        0.0.0.0:*    users:(("nginx",pid=
+1821285,fd=7),("nginx",pid=1821284,fd=7),("nginx",pid=1821283,fd=7),("nginx",pid
+=1821282,fd=7),("nginx",pid=966,fd=7))
+LISTEN 0      4096   62.171.170.186:24584      0.0.0.0:*    users:(("docker-prox
+y",pid=3610844,fd=8))
+
+LISTEN 0      4096   62.171.170.186:24583      0.0.0.0:*    users:(("docker-prox
+y",pid=3610727,fd=8))
+
+LISTEN 0      20          127.0.0.1:25         0.0.0.0:*    users:(("exim4",pid=
+1199,fd=5))
+
+LISTEN 0      4096          0.0.0.0:5355       0.0.0.0:*    users:(("systemd-res
+olve",pid=363,fd=12))
+
+LISTEN 0      4096   62.171.170.186:37565      0.0.0.0:*    users:(("docker-prox
+y",pid=3606594,fd=8))
+
+LISTEN 0      4096        127.0.0.1:20241      0.0.0.0:*    users:(("cloudflared
+",pid=858,fd=3))
+
+LISTEN 0      4096   62.171.170.186:23580      0.0.0.0:*    users:(("docker-prox
+y",pid=3610070,fd=8))
+
+LISTEN 0      4096   62.171.170.186:23581      0.0.0.0:*    users:(("docker-prox
+y",pid=3609815,fd=8))
+
+LISTEN 0      4096   62.171.170.186:23570      0.0.0.0:*    users:(("docker-prox
+y",pid=3610151,fd=8))
+
+LISTEN 0      4096   62.171.170.186:23568      0.0.0.0:*    users:(("docker-prox
+y",pid=3605708,fd=8))
+
+LISTEN 0      4096   62.171.170.186:23566      0.0.0.0:*    users:(("docker-prox
+y",pid=3609639,fd=8))
+
+LISTEN 0      4096   62.171.170.186:23585      0.0.0.0:*    users:(("docker-prox
+y",pid=3611274,fd=8))
+
+LISTEN 0      511           0.0.0.0:3002       0.0.0.0:*    users:(("node /var/w
+ww/p",pid=1815748,fd=23))
+
+LISTEN 0      4096   62.171.170.186:24566      0.0.0.0:*    users:(("docker-prox
+y",pid=3610454,fd=8))
+
+LISTEN 0      4096   62.171.170.186:24565      0.0.0.0:*    users:(("docker-prox
+y",pid=3610288,fd=8))
+
+LISTEN 0      4096        127.0.0.1:11434      0.0.0.0:*    users:(("ollama",pid
+=785223,fd=3))
+
+LISTEN 0      4096   62.171.170.186:22582      0.0.0.0:*    users:(("docker-prox
+y",pid=3609037,fd=8))
+
+LISTEN 0      4096   62.171.170.186:22581      0.0.0.0:*    users:(("docker-prox
+y",pid=3605929,fd=8))
+
+LISTEN 0      4096   62.171.170.186:22570      0.0.0.0:*    users:(("docker-prox
+y",pid=3606117,fd=8))
+
+LISTEN 0      4096   62.171.170.186:22568      0.0.0.0:*    users:(("docker-prox
+y",pid=3609499,fd=8))
+
+LISTEN 0      4096   62.171.170.186:22569      0.0.0.0:*    users:(("docker-prox
+y",pid=3609411,fd=8))
+
+LISTEN 0      4096   62.171.170.186:22566      0.0.0.0:*    users:(("docker-prox
+y",pid=3607848,fd=8))
+
+LISTEN 0      4096   62.171.170.186:22567      0.0.0.0:*    users:(("docker-prox
+y",pid=3608684,fd=8))
+
+LISTEN 0      511           0.0.0.0:4000       0.0.0.0:*    users:(("node /var/w
+ww/w",pid=1751166,fd=23))
+
+LISTEN 0      4096   62.171.170.186:27582      0.0.0.0:*    users:(("docker-prox
+y",pid=3607422,fd=8))
+
+LISTEN 0      4096   62.171.170.186:27580      0.0.0.0:*    users:(("docker-prox
+y",pid=3606751,fd=8))
+
+LISTEN 0      4096   62.171.170.186:27581      0.0.0.0:*    users:(("docker-prox
+y",pid=3607264,fd=8))
+
+LISTEN 0      4096   62.171.170.186:27570      0.0.0.0:*    users:(("docker-prox
+y",pid=3608815,fd=8))
+
+LISTEN 0      4096   62.171.170.186:27569      0.0.0.0:*    users:(("docker-prox
+y",pid=3606457,fd=8))
+
+LISTEN 0      4096    127.0.0.53%lo:53         0.0.0.0:*    users:(("systemd-res
+olve",pid=363,fd=19))
+
+LISTEN 0      80            0.0.0.0:3306       0.0.0.0:*    users:(("mariadbd",p
+id=803,fd=63))
+
+LISTEN 0      511         127.0.0.1:6379       0.0.0.0:*    users:(("redis-serve
+r",pid=703,fd=20))
+
+LISTEN 0      4096       127.0.0.54:53         0.0.0.0:*    users:(("systemd-res
+olve",pid=363,fd=21))
+
+LISTEN 0      511             [::1]:6379          [::]:*    users:(("redis-serve
+r",pid=703,fd=21))
+
+LISTEN 0      511              [::]:80            [::]:*    users:(("nginx",pid=
+1821285,fd=9),("nginx",pid=1821284,fd=9),("nginx",pid=1821283,fd=9),("nginx",pid
+=1821282,fd=9),("nginx",pid=966,fd=9))
+LISTEN 0      128              [::]:22            [::]:*    users:(("sshd",pid=7
+37,fd=7))
+
+LISTEN 0      511              [::]:443           [::]:*    users:(("nginx",pid=
+1821285,fd=6),("nginx",pid=1821284,fd=6),("nginx",pid=1821283,fd=6),("nginx",pid
+=1821282,fd=6),("nginx",pid=966,fd=6))
+LISTEN 0      4096                *:2022             *:*    users:(("wings",pid=
+3604792,fd=79))
+
+LISTEN 0      4096             [::]:5355          [::]:*    users:(("systemd-res
+olve",pid=363,fd=14))
+
+LISTEN 0      20              [::1]:25            [::]:*    users:(("exim4",pid=
+1199,fd=6))
+
+LISTEN 0      200             [::1]:5432          [::]:*    users:(("postgres",p
+id=810,fd=6))
+
+LISTEN 0      511                 *:24428            *:*    users:(("node",pid=1
+38923,fd=21))
+
+LISTEN 0      4096                *:8080             *:*    users:(("wings",pid=
+3604792,fd=84))
+
+root@silentwolf:/var/www/wolftech# pm2 list
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 7  │ pairwolf           │ fork     │ 0    │ online    │ 0%       │ 27.5mb   │
+│ 8  │ wolfapis           │ fork     │ 0    │ online    │ 0%       │ 26.4mb   │
+│ 0  │ wolfhost           │ fork     │ 19   │ online    │ 0%       │ 10.5mb   │
+│ 6  │ wolfmusicapi       │ fork     │ 4    │ online    │ 0%       │ 44.5mb   │
+│ 10 │ wolftech           │ fork     │ 0    │ online    │ 0%       │ 65.8mb   │
+│ 2  │ xwolfsec           │ fork     │ 2    │ online    │ 0%       │ 27.1mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@silentwolf:/var/www/wolftech# sudo ss -tlnp | awk '{print $4, $6}' | grep L
+ISTEN
+root@silentwolf:/var/www/wolftech#

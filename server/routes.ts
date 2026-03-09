@@ -79,7 +79,7 @@ function normalizePhone(phone: string, countryCode: string): string {
   const dialCode = prefixMap[countryCode] || '';
   if (dialCode && p.startsWith('0')) p = dialCode + p.slice(1);
   if (dialCode && !p.startsWith(dialCode)) p = dialCode + p;
-  return p;
+  return '+' + p;
 }
 
 export async function registerRoutes(
@@ -235,6 +235,7 @@ export async function registerRoutes(
       let phone = input.phone.replace(/\s+/g, '').replace(/^\+/, '');
       if (phone.startsWith('0')) phone = '254' + phone.slice(1);
       if (!phone.startsWith('254')) phone = '254' + phone;
+      phone = '+' + phone;
 
       const body = JSON.stringify({
         email: input.email,

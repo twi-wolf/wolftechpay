@@ -31,9 +31,8 @@ export function initSecurity() {
 
   // Anti-scraping: detect headless/automated browsers
   const isHeadless =
-    navigator.webdriver ||
-    !navigator.languages ||
-    navigator.languages.length === 0;
+    navigator.webdriver === true &&
+    (!navigator.languages || navigator.languages.length === 0);
 
   if (isHeadless) {
     document.body.innerHTML = "";

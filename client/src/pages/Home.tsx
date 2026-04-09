@@ -571,7 +571,11 @@ function PaymentForm() {
                 <AlertTriangle className="w-3 h-3" /> MIN {MIN_KES} KES
               </span>
             )}
-            <span className="text-3xl font-black text-primary glow-text">{formattedAmount}</span>
+            {isKenya ? (
+              <span className="text-sm font-bold text-primary/50 tracking-widest font-mono">PLACE YOUR PRICE ABOVE</span>
+            ) : (
+              <span className="text-3xl font-black text-primary glow-text">{formattedAmount}</span>
+            )}
             {!isKenya && (
               <span className="text-primary/40 text-xs font-mono">≈ {validKes} KES</span>
             )}

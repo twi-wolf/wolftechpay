@@ -24,18 +24,19 @@ import {
   Globe,
 } from "lucide-react";
 
-const BASE_KES = 70;
+const DEFAULT_KES = 70;
+const MIN_KES = 60;
 
 const FALLBACK_RATES: Record<string, number> = {
   KES: 1, NGN: 10.73, GHS: 0.083, ZAR: 0.129, EGP: 0.388,
   RWF: 11.29, XOF: 4.38, TZS: 185.0, UGX: 26.5, USD: 0.0077,
 };
 
-function convertAmount(rates: Record<string, number> | undefined, currency: string): number {
-  if (currency === "KES") return BASE_KES;
+function convertAmount(rates: Record<string, number> | undefined, currency: string, baseKes: number): number {
+  if (currency === "KES") return baseKes;
   const rate = rates?.[currency] ?? FALLBACK_RATES[currency] ?? null;
-  if (rate === null) return BASE_KES;
-  return Math.round(BASE_KES * rate * 100) / 100;
+  if (rate === null) return baseKes;
+  return Math.round(baseKes * rate * 100) / 100;
 }
 
 function formatAmount(amount: number, currency: string): string {
@@ -187,7 +188,7 @@ const cardFormSchema = z.object({
 });
 type CardFormValues = z.infer<typeof cardFormSchema>;
 
-function CardPaymentForm({ country }: { country: CountryConfig }) {
+function CardPaymentForm({ country, amountKes }: { country: CountryConfig; amountKes: number }) {
   const initPayment = useInitPayment();
   const form = useForm<CardFormValues>({
     resolver: zodResolver(cardFormSchema),
@@ -195,7 +196,7 @@ function CardPaymentForm({ country }: { country: CountryConfig }) {
   });
 
   const onSubmit = (data: CardFormValues) => {
-    initPayment.mutate({ email: data.email, country: country.code }, {
+    initPayment.mutate({ email: data.email, country: country.code, amountKes }, {
       onSuccess: (res) => { window.location.href = res.authorizationUrl; },
       onError: (err) => { form.setError("root", { message: err.message }); },
     });
@@ -231,7 +232,7 @@ const mobileMoneySchema = z.object({
 });
 type MobileMoneyFormValues = z.infer<typeof mobileMoneySchema>;
 
-function MobileMoneyForm({ onSent }: { onSent: (ref: string, isMpesa: boolean) => void }) {
+function MobileMoneyForm({ onSent, amountKes }: { onSent: (ref: string, isMpesa: boolean) => void; amountKes: number }) {
   const initMobileMoney = useInitMobileMoney();
   const providers = KENYA.momoProviders!;
 
@@ -242,7 +243,7 @@ function MobileMoneyForm({ onSent }: { onSent: (ref: string, isMpesa: boolean) =
 
   const onSubmit = (data: MobileMoneyFormValues) => {
     initMobileMoney.mutate(
-      { phone: data.phone, provider: data.provider, country: "KE" },
+      { phone: data.phone, provider: data.provider, country: "KE", amountKes },
       {
         onSuccess: (res) => { onSent(res.reference, data.provider === "mpesa"); },
         onError: (err) => { form.setError("root", { message: err.message }); },
@@ -513,12 +514,16 @@ function PaymentForm() {
   const [momoRef, setMomoRef] = useState<string | null>(null);
   const [isMpesa, setIsMpesa] = useState(false);
   const [momoSuccess, setMomoSuccess] = useState<Transaction | null>(null);
+  const [amountKesInput, setAmountKesInput] = useState<string>(String(DEFAULT_KES));
 
   const { data: ratesData } = useExchangeRates();
   const rates = ratesData?.rates;
 
+  const parsedKes = parseFloat(amountKesInput);
+  const validKes = !isNaN(parsedKes) && parsedKes >= MIN_KES ? Math.round(parsedKes) : MIN_KES;
+
   const isKenya = country.code === "KE";
-  const convertedAmount = convertAmount(rates, country.currency);
+  const convertedAmount = convertAmount(rates, country.currency, validKes);
   const formattedAmount = formatAmount(convertedAmount, country.currency);
 
   useEffect(() => {
@@ -547,11 +552,28 @@ function PaymentForm() {
           <h2 className="text-lg text-white font-semibold flex justify-center items-center gap-2">
             <Zap className="w-4 h-4 text-primary" /> INITIALIZE UPLINK
           </h2>
-          <div className="mt-2 flex flex-col items-center">
-            <span className="text-muted-foreground text-xs font-bold tracking-widest">REQUIRED DEPLOYMENT FEE</span>
-            <span className="text-3xl font-black text-primary glow-text mt-1">{formattedAmount}</span>
+          <div className="mt-3 flex flex-col items-center gap-2">
+            <span className="text-muted-foreground text-xs font-bold tracking-widest">DEPLOYMENT FEE (KES)</span>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={MIN_KES}
+                step={1}
+                value={amountKesInput}
+                onChange={(e) => setAmountKesInput(e.target.value)}
+                data-testid="input-amount-kes"
+                className="w-28 bg-black/50 border border-primary/30 px-3 py-2 text-primary text-center text-xl font-black focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-mono"
+              />
+              <span className="text-primary/60 text-xs font-mono font-bold">KES</span>
+            </div>
+            {(isNaN(parsedKes) || parsedKes < MIN_KES) && (
+              <span className="text-destructive text-xs font-mono flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3" /> MIN {MIN_KES} KES
+              </span>
+            )}
+            <span className="text-3xl font-black text-primary glow-text">{formattedAmount}</span>
             {!isKenya && (
-              <span className="text-primary/40 text-xs font-mono mt-0.5">≈ {BASE_KES} KES</span>
+              <span className="text-primary/40 text-xs font-mono">≈ {validKes} KES</span>
             )}
           </div>
         </div>
@@ -601,9 +623,10 @@ function PaymentForm() {
       {isKenya && tab === "mobilemoney" ? (
         <MobileMoneyForm
           onSent={(ref, mpesa) => { setMomoRef(ref); setIsMpesa(mpesa); }}
+          amountKes={validKes}
         />
       ) : (
-        <CardPaymentForm country={country} />
+        <CardPaymentForm country={country} amountKes={validKes} />
       )}
     </div>
   );

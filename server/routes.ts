@@ -82,10 +82,10 @@ async function fetchRates(): Promise<Record<string, number>> {
   };
 }
 
-async function amountInCents(currency: string): Promise<number> {
+async function amountInCents(currency: string, baseKes = BASE_AMOUNT_KES): Promise<number> {
   const rates = await fetchRates();
   const rate = rates[currency] ?? 1;
-  return Math.round(BASE_AMOUNT_KES * rate * 100);
+  return Math.round(baseKes * rate * 100);
 }
 
 function normalizeKenyanPhone(phone: string): string {
@@ -127,10 +127,11 @@ export async function registerRoutes(
       const phone = normalizeKenyanPhone(input.phone);
       const cleanPhone = phone.replace(/\D/g, '');
       const email = input.email || `user.${cleanPhone}@wolftech.pay`;
+      const baseKes = input.amountKes ?? BASE_AMOUNT_KES;
 
       const body = JSON.stringify({
         email,
-        amount: BASE_AMOUNT_KES * 100,
+        amount: baseKes * 100,
         currency: "KES",
         mobile_money: { phone, provider: input.provider },
       });
@@ -151,7 +152,7 @@ export async function registerRoutes(
 
         await storage.createTransaction({
           email,
-          amount: BASE_AMOUNT_KES,
+          amount: baseKes,
           reference: ref,
           method,
         });
@@ -218,7 +219,8 @@ export async function registerRoutes(
 
       const country = getCountry(input.country);
       const currency = country?.currency || 'KES';
-      const cents = await amountInCents(currency);
+      const baseKes = input.amountKes ?? BASE_AMOUNT_KES;
+      const cents = await amountInCents(currency, baseKes);
 
       const body = JSON.stringify({
         email: input.email,
@@ -238,7 +240,7 @@ export async function registerRoutes(
       if (response.status) {
         await storage.createTransaction({
           email: input.email,
-          amount: BASE_AMOUNT_KES,
+          amount: baseKes,
           reference: response.data.reference,
           method: "card",
         });

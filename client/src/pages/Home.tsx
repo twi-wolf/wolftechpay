@@ -535,6 +535,9 @@ function SupportForm() {
     <div className="space-y-4">
       {/* Creator Header */}
       <div className="text-center pb-2">
+        <div className="mb-1 text-xs font-bold tracking-[0.3em] text-amber-500/60 uppercase">
+          WOLF TECH
+        </div>
         <CoffeeCup size="lg" />
         <h1
           className="text-3xl font-bold text-amber-200 mt-3 mb-1"

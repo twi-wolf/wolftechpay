@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,20 +12,17 @@ import {
 import { COUNTRIES, KENYA, type CountryConfig } from "@shared/countries";
 import type { Transaction } from "@shared/schema";
 import {
-  Terminal,
-  ShieldCheck,
   AlertTriangle,
-  Zap,
-  CheckSquare,
   Loader2,
   CreditCard,
   Smartphone,
   ChevronDown,
   Globe,
+  Heart,
+  CheckCircle2,
 } from "lucide-react";
 
-const DEFAULT_KES = 70;
-const MIN_KES = 60;
+const COFFEE_PRICE_KES = 100;
 
 const FALLBACK_RATES: Record<string, number> = {
   KES: 1, NGN: 10.73, GHS: 0.083, ZAR: 0.129, EGP: 0.388,
@@ -40,91 +37,37 @@ function convertAmount(rates: Record<string, number> | undefined, currency: stri
 }
 
 function formatAmount(amount: number, currency: string): string {
-  if (currency === "XOF" || currency === "RWF" || currency === "TZS" || currency === "UGX") {
+  if (["XOF", "RWF", "TZS", "UGX"].includes(currency)) {
     return `${Math.round(amount).toLocaleString()} ${currency}`;
   }
   return `${amount.toFixed(2)} ${currency}`;
 }
 
+function CoffeeCup({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
+  const sizes = { sm: "text-3xl", md: "text-5xl", lg: "text-7xl" };
+  return (
+    <div className="relative inline-flex flex-col items-center">
+      <div className="flex gap-1 mb-0.5 h-4">
+        <span className="steam-1 text-amber-400/60 text-xs">~</span>
+        <span className="steam-2 text-amber-400/60 text-xs">~</span>
+        <span className="steam-3 text-amber-400/60 text-xs">~</span>
+      </div>
+      <span className={sizes[size]}>☕</span>
+    </div>
+  );
+}
+
 function PageContainer({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen scanline-overlay flex flex-col items-center justify-center p-3 relative overflow-hidden">
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
+        <div className="absolute top-1/4 left-1/6 w-80 h-80 bg-amber-600/5 rounded-full blur-[100px]" />
+        <div className="absolute bottom-1/4 right-1/6 w-96 h-96 bg-amber-900/10 rounded-full blur-[120px]" />
+      </div>
       <div className="w-full max-w-md z-10 relative">
-        <div className="text-center mb-4">
-          <h1
-            className="text-4xl md:text-5xl font-black text-primary animate-flicker glow-text uppercase tracking-widest"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            WOLFTECH
-          </h1>
-          <p className="text-primary/70 text-xs font-bold tracking-[0.3em] mt-1 flex items-center justify-center gap-1">
-            <Terminal className="w-3 h-3" /> SECURE BOT DEPLOYMENT
-          </p>
-        </div>
         {children}
       </div>
     </div>
-  );
-}
-
-function CornerDeco() {
-  return (
-    <>
-      <div className="pointer-events-none absolute top-0 left-0 w-5 h-5 border-t-2 border-l-2 border-primary" />
-      <div className="pointer-events-none absolute top-0 right-0 w-5 h-5 border-t-2 border-r-2 border-primary" />
-      <div className="pointer-events-none absolute bottom-0 left-0 w-5 h-5 border-b-2 border-l-2 border-primary" />
-      <div className="pointer-events-none absolute bottom-0 right-0 w-5 h-5 border-b-2 border-r-2 border-primary" />
-    </>
-  );
-}
-
-function FormField({
-  label,
-  error,
-  children,
-}: {
-  label: string;
-  error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-2">
-      <label className="text-xs font-bold text-primary/80 tracking-widest flex items-center gap-2">
-        <span className="w-2 h-2 bg-primary/80 rounded-sm inline-block" />
-        {label}
-      </label>
-      {children}
-      {error && (
-        <p className="text-destructive text-sm font-semibold flex items-center gap-1">
-          <AlertTriangle className="w-4 h-4" /> {error}
-        </p>
-      )}
-    </div>
-  );
-}
-
-function SubmitButton({ pending, label, pendingLabel }: { pending: boolean; label: string; pendingLabel: string }) {
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      data-testid="button-submit"
-      className="w-full bg-primary text-black font-black text-lg py-4 tracking-[0.2em] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 group"
-    >
-      {pending ? (
-        <>
-          <Loader2 className="w-6 h-6 animate-spin" />
-          <span>{pendingLabel}</span>
-        </>
-      ) : (
-        <>
-          <span>{label}</span>
-          <Zap className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-        </>
-      )}
-    </button>
   );
 }
 
@@ -138,42 +81,39 @@ function CountrySelector({
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="space-y-2">
-      <label className="text-xs font-bold text-primary/80 tracking-widest flex items-center gap-2">
-        <Globe className="w-3 h-3" /> SELECT YOUR COUNTRY
+    <div className="space-y-1.5">
+      <label className="text-xs font-bold text-amber-400/70 flex items-center gap-1.5">
+        <Globe className="w-3 h-3" /> Your country
       </label>
       <div className="relative">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="w-full bg-black/50 border border-primary/30 px-4 py-3 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-mono flex items-center justify-between"
+          className="w-full bg-amber-950/30 border border-amber-800/30 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/30 transition-all font-body flex items-center justify-between"
         >
           <span className="flex items-center gap-3">
             <span className="text-xl">{selected.flag}</span>
-            <span>{selected.name}</span>
-            <span className="text-primary/50 text-xs">({selected.currency})</span>
+            <span className="font-semibold">{selected.name}</span>
+            <span className="text-amber-500/50 text-xs">({selected.currency})</span>
           </span>
-          <ChevronDown className={`w-4 h-4 text-primary/60 transition-transform ${open ? "rotate-180" : ""}`} />
+          <ChevronDown className={`w-4 h-4 text-amber-500/50 transition-transform ${open ? "rotate-180" : ""}`} />
         </button>
         {open && (
-          <div className="absolute top-full left-0 right-0 z-50 bg-black border border-primary/30 max-h-60 overflow-y-auto shadow-2xl">
+          <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-card border border-amber-800/30 rounded-xl max-h-60 overflow-y-auto shadow-2xl">
             {COUNTRIES.map((c) => (
               <button
                 key={c.code}
                 type="button"
                 onClick={() => { onChange(c); setOpen(false); }}
-                className={`w-full px-4 py-3 text-left font-mono flex items-center gap-3 transition-colors ${
+                className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
                   c.code === selected.code
-                    ? "bg-primary/20 text-primary"
-                    : "text-white/80 hover:bg-primary/10"
+                    ? "bg-amber-500/15 text-amber-300"
+                    : "text-foreground/80 hover:bg-amber-500/8"
                 }`}
               >
                 <span className="text-xl">{c.flag}</span>
-                <span className="flex-1">{c.name}</span>
-                <span className="text-xs text-primary/50">{c.currency}</span>
-                <span className="text-xs text-primary/30">
-                  {c.code === "KE" ? "📱+💳" : "💳"}
-                </span>
+                <span className="flex-1 font-medium">{c.name}</span>
+                <span className="text-xs text-amber-500/50">{c.currency}</span>
               </button>
             ))}
           </div>
@@ -183,12 +123,70 @@ function CountrySelector({
   );
 }
 
+function InputField({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs font-bold text-amber-400/70">{label}</label>
+      {children}
+      {error && (
+        <p className="text-red-400 text-xs flex items-center gap-1">
+          <AlertTriangle className="w-3 h-3" /> {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+const inputClass =
+  "w-full bg-amber-950/30 border border-amber-800/30 rounded-lg px-4 py-3 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/30 transition-all";
+
+function PayButton({ pending, label, pendingLabel }: { pending: boolean; label: string; pendingLabel: string }) {
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="w-full bg-amber-500 hover:bg-amber-400 text-amber-950 font-black text-base py-4 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 hover:-translate-y-0.5 active:translate-y-0"
+    >
+      {pending ? (
+        <>
+          <Loader2 className="w-5 h-5 animate-spin" />
+          <span>{pendingLabel}</span>
+        </>
+      ) : (
+        <>
+          <span>☕</span>
+          <span>{label}</span>
+          <Heart className="w-4 h-4" />
+        </>
+      )}
+    </button>
+  );
+}
+
 const cardFormSchema = z.object({
-  email: z.string().email({ message: "INVALID EMAIL" }),
+  email: z.string().email({ message: "Please enter a valid email" }),
 });
 type CardFormValues = z.infer<typeof cardFormSchema>;
 
-function CardPaymentForm({ country, amountKes }: { country: CountryConfig; amountKes: number }) {
+function CardPaymentForm({
+  country,
+  amountKes,
+  name,
+  message,
+}: {
+  country: CountryConfig;
+  amountKes: number;
+  name: string;
+  message: string;
+}) {
   const initPayment = useInitPayment();
   const form = useForm<CardFormValues>({
     resolver: zodResolver(cardFormSchema),
@@ -196,43 +194,55 @@ function CardPaymentForm({ country, amountKes }: { country: CountryConfig; amoun
   });
 
   const onSubmit = (data: CardFormValues) => {
-    initPayment.mutate({ email: data.email, country: country.code, amountKes }, {
-      onSuccess: (res) => { window.location.href = res.authorizationUrl; },
-      onError: (err) => { form.setError("root", { message: err.message }); },
-    });
+    initPayment.mutate(
+      { email: data.email, country: country.code, amountKes, name: name || undefined, message: message || undefined },
+      {
+        onSuccess: (res) => { window.location.href = res.authorizationUrl; },
+        onError: (err) => { form.setError("root", { message: err.message }); },
+      }
+    );
   };
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-      <FormField label="OPERATOR EMAIL" error={form.formState.errors.email?.message}>
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <InputField label="Your email" error={form.formState.errors.email?.message}>
         <input
           {...form.register("email")}
-          data-testid="input-email-card"
           disabled={initPayment.isPending}
-          placeholder="operator@system.net"
-          className="w-full bg-black/50 border border-primary/30 px-4 py-4 text-white placeholder:text-white/20 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-mono"
+          placeholder="you@example.com"
+          className={inputClass}
         />
-      </FormField>
+      </InputField>
 
       {form.formState.errors.root && (
-        <div className="bg-destructive/10 border border-destructive/50 p-3 text-destructive text-sm font-bold flex items-center gap-2">
-          <AlertTriangle className="w-5 h-5 shrink-0" />
+        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-red-400 text-sm flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
           {form.formState.errors.root.message}
         </div>
       )}
 
-      <SubmitButton pending={initPayment.isPending} label="PAY WITH CARD" pendingLabel="CONNECTING TO GATEWAY..." />
+      <PayButton pending={initPayment.isPending} label="Support with Card" pendingLabel="Connecting to gateway..." />
     </form>
   );
 }
 
 const mobileMoneySchema = z.object({
-  phone: z.string().min(9, { message: "ENTER A VALID PHONE NUMBER" }),
+  phone: z.string().min(9, { message: "Enter a valid phone number" }),
   provider: z.string().min(1),
 });
 type MobileMoneyFormValues = z.infer<typeof mobileMoneySchema>;
 
-function MobileMoneyForm({ onSent, amountKes }: { onSent: (ref: string, isMpesa: boolean) => void; amountKes: number }) {
+function MobileMoneyForm({
+  onSent,
+  amountKes,
+  name,
+  message,
+}: {
+  onSent: (ref: string, isMpesa: boolean) => void;
+  amountKes: number;
+  name: string;
+  message: string;
+}) {
   const initMobileMoney = useInitMobileMoney();
   const providers = KENYA.momoProviders!;
 
@@ -243,7 +253,14 @@ function MobileMoneyForm({ onSent, amountKes }: { onSent: (ref: string, isMpesa:
 
   const onSubmit = (data: MobileMoneyFormValues) => {
     initMobileMoney.mutate(
-      { phone: data.phone, provider: data.provider, country: "KE", amountKes },
+      {
+        phone: data.phone,
+        provider: data.provider,
+        country: "KE",
+        amountKes,
+        name: name || undefined,
+        message: message || undefined,
+      },
       {
         onSuccess: (res) => { onSent(res.reference, data.provider === "mpesa"); },
         onError: (err) => { form.setError("root", { message: err.message }); },
@@ -254,93 +271,55 @@ function MobileMoneyForm({ onSent, amountKes }: { onSent: (ref: string, isMpesa:
   const selectedProvider = form.watch("provider");
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
       {providers.length > 1 && (
-        <FormField label="PROVIDER" error={form.formState.errors.provider?.message}>
+        <InputField label="Provider" error={form.formState.errors.provider?.message}>
           <div className="relative">
             <select
               {...form.register("provider")}
               disabled={initMobileMoney.isPending}
-              className="w-full bg-black/50 border border-primary/30 px-4 py-4 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-mono appearance-none cursor-pointer"
+              className={inputClass + " appearance-none cursor-pointer"}
             >
               {providers.map((p) => (
-                <option key={p.code} value={p.code} className="bg-black">
+                <option key={p.code} value={p.code} className="bg-card">
                   {p.name}
                 </option>
               ))}
             </select>
-            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/60 pointer-events-none" />
+            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500/50 pointer-events-none" />
           </div>
-        </FormField>
+        </InputField>
       )}
 
-      <FormField
-        label={selectedProvider === "mpesa" ? "M-PESA PHONE NUMBER" : "AIRTEL MONEY PHONE NUMBER"}
+      <InputField
+        label={selectedProvider === "mpesa" ? "M-Pesa phone number" : "Airtel Money phone number"}
         error={form.formState.errors.phone?.message}
       >
         <input
           {...form.register("phone")}
-          data-testid="input-phone-mobile"
           disabled={initMobileMoney.isPending}
           placeholder={KENYA.phonePlaceholder}
-          className="w-full bg-black/50 border border-primary/30 px-4 py-4 text-white placeholder:text-white/20 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-mono"
+          className={inputClass}
         />
-      </FormField>
+      </InputField>
 
       {form.formState.errors.root && (
-        <div className="bg-destructive/10 border border-destructive/50 p-3 text-destructive text-sm font-bold flex items-center gap-2">
-          <AlertTriangle className="w-5 h-5 shrink-0" />
+        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-red-400 text-sm flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
           {form.formState.errors.root.message}
         </div>
       )}
 
-      <SubmitButton
+      <PayButton
         pending={initMobileMoney.isPending}
-        label={selectedProvider === "mpesa" ? "SEND STK PUSH" : "AUTHORIZE AIRTEL PAYMENT"}
-        pendingLabel="SENDING REQUEST..."
+        label={selectedProvider === "mpesa" ? "Support via M-Pesa" : "Support via Airtel Money"}
+        pendingLabel="Sending STK push..."
       />
     </form>
   );
 }
 
-type TerminalState = "failed" | "abandoned" | "timeout" | null;
-
-function TerminalView({ state, psMessage }: { state: TerminalState; psMessage?: string }) {
-  const config: Record<NonNullable<TerminalState>, { title: string; detail: string }> = {
-    abandoned: {
-      title: "REQUEST CANCELLED",
-      detail: "You dismissed the payment prompt. No charge was made.",
-    },
-    timeout: {
-      title: "REQUEST TIMED OUT",
-      detail: "The 3-minute window expired before authorization. No charge was made.",
-    },
-    failed: {
-      title: "PAYMENT FAILED",
-      detail: psMessage || "The payment could not be completed.",
-    },
-  };
-  const c = config[state!] ?? config.failed;
-
-  return (
-    <>
-      <AlertTriangle className="w-16 h-16 text-destructive" />
-      <div>
-        <h2 className="text-xl text-destructive font-bold tracking-widest">{c.title}</h2>
-        <p className="text-muted-foreground font-mono text-sm mt-2">{c.detail}</p>
-      </div>
-      <button
-        onClick={() => window.location.reload()}
-        className="border border-primary/50 text-primary px-6 py-3 font-bold tracking-widest"
-        data-testid="button-retry"
-      >
-        TRY AGAIN
-      </button>
-    </>
-  );
-}
-
-function MobileMoneyWaitingView({
+function WaitingView({
   reference,
   isMpesa,
   onSuccess,
@@ -358,113 +337,112 @@ function MobileMoneyWaitingView({
   const status = data?.status;
   const psMessage = data?.psMessage;
 
-  const isCancelled = status === "abandoned" ||
-    (status === "failed" && !!psMessage?.toLowerCase().includes("cancel"));
-  const isTimeout = status === "timeout" ||
-    (status === "failed" && !!psMessage?.toLowerCase().includes("timeout"));
+  const isCancelled = status === "abandoned" || !!psMessage?.toLowerCase().includes("cancel");
+  const isTimeout = status === "timeout" || !!psMessage?.toLowerCase().includes("timeout");
+  const isFailed = status === "failed" || status === "abandoned" || status === "timeout";
 
-  const terminalState: TerminalState =
-    isCancelled ? "abandoned"
-    : isTimeout ? "timeout"
-    : (status === "failed" || status === "abandoned" || status === "timeout") ? "failed"
-    : null;
+  if (isFailed) {
+    return (
+      <div className="coffee-card p-8 text-center space-y-5">
+        <div className="text-5xl">😔</div>
+        <div>
+          <h2 className="text-xl font-bold text-red-400 mb-1">
+            {isCancelled ? "Payment Cancelled" : isTimeout ? "Request Timed Out" : "Payment Failed"}
+          </h2>
+          <p className="text-muted-foreground text-sm">
+            {isCancelled
+              ? "You cancelled the payment. No charge was made."
+              : isTimeout
+              ? "The 3-minute window expired. No charge was made."
+              : psMessage || "Something went wrong. No charge was made."}
+          </p>
+        </div>
+        <button
+          onClick={() => window.location.reload()}
+          className="border border-amber-500/40 text-amber-400 px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-amber-500/10 transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div className="glass-panel p-10 text-center glow-box flex flex-col items-center justify-center space-y-6 relative">
-      <CornerDeco />
-      {terminalState ? (
-        <TerminalView state={terminalState} psMessage={psMessage} />
-      ) : (
-        <>
-          <div className="relative">
-            <div className="absolute inset-0 border-4 border-primary/20 rounded-full animate-ping" />
-            <Smartphone className="w-16 h-16 text-primary animate-pulse relative z-10" />
-          </div>
-          <div>
-            <h2 className="text-xl text-primary font-bold tracking-widest animate-pulse">
-              {isMpesa ? "AWAITING M-PESA" : "AWAITING AIRTEL"}
-            </h2>
-            <p className="text-muted-foreground text-sm font-mono mt-2">
-              {isMpesa
-                ? "Check your phone for an STK push prompt and enter your PIN."
-                : "Check your phone for the Airtel Money authorization prompt."}
-            </p>
-            <p className="text-primary/50 text-xs font-mono mt-3">REF: {reference}</p>
-          </div>
-          <div className="flex gap-1 mt-4">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                style={{ animationDelay: `${i * 0.15}s` }}
-              />
-            ))}
-          </div>
-        </>
-      )}
+    <div className="coffee-card p-8 text-center space-y-5">
+      <div className="relative inline-flex">
+        <div className="absolute inset-0 border-4 border-amber-500/20 rounded-full animate-ping" />
+        <Smartphone className="w-14 h-14 text-amber-400 animate-pulse relative z-10" />
+      </div>
+      <div>
+        <h2 className="text-xl font-bold text-amber-300 mb-2">
+          {isMpesa ? "Check your phone for M-Pesa" : "Check your phone for Airtel Money"}
+        </h2>
+        <p className="text-muted-foreground text-sm">
+          {isMpesa
+            ? "An STK push has been sent. Enter your M-Pesa PIN to complete."
+            : "Authorize the Airtel Money payment on your phone."}
+        </p>
+      </div>
+      <div className="flex justify-center gap-1.5 pt-2">
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="w-2 h-2 bg-amber-400 rounded-full animate-bounce"
+            style={{ animationDelay: `${i * 0.18}s` }}
+          />
+        ))}
+      </div>
     </div>
   );
 }
 
 function SuccessView({ tx }: { tx: Transaction }) {
-  const jsonRef = useRef<HTMLPreElement>(null);
-  useEffect(() => {
-    if (jsonRef.current) {
-      setTimeout(() => jsonRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
-    }
-  }, []);
+  const coffees = Math.max(1, Math.round(tx.amount / COFFEE_PRICE_KES));
+  const cups = "☕".repeat(Math.min(coffees, 5));
 
   return (
-    <div className="glass-panel p-5 md:p-6 glow-box relative">
-      <CornerDeco />
-      <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
-        <ShieldCheck className="w-24 h-24 text-primary" />
+    <div className="coffee-card p-8 text-center space-y-5">
+      <div className="text-6xl">{cups}</div>
+      <div>
+        <h2 className="text-2xl font-bold text-amber-300 mb-1">
+          {tx.name ? `Thank you, ${tx.name}!` : "Thank you so much!"}
+        </h2>
+        <p className="text-muted-foreground text-sm">
+          You bought {coffees} {coffees === 1 ? "coffee" : "coffees"} — that means a lot! ☕
+        </p>
       </div>
 
-      <div className="flex items-center gap-3 mb-4 relative z-10">
-        <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shrink-0">
-          <CheckSquare className="w-5 h-5 text-black" />
+      {tx.message && (
+        <div className="bg-amber-500/8 border border-amber-500/20 rounded-xl p-4">
+          <p className="text-amber-200/80 text-sm italic">"{tx.message}"</p>
         </div>
-        <div>
-          <h2 className="text-xl font-bold text-white tracking-widest">DEPLOYMENT AUTHORIZED</h2>
-          <p className="text-primary font-mono text-xs">STATUS: SUCCESS</p>
+      )}
+
+      <div className="flex items-center justify-center gap-2 text-green-400 text-sm font-semibold">
+        <CheckCircle2 className="w-4 h-4" />
+        <span>Payment confirmed</span>
+      </div>
+
+      <div className="bg-amber-950/50 rounded-lg p-3 text-left text-xs text-muted-foreground space-y-1 font-mono">
+        <div className="flex justify-between">
+          <span>Reference</span>
+          <span className="text-amber-400/70">{tx.reference.substring(0, 16)}...</span>
         </div>
-      </div>
-
-      <div className="bg-primary text-black font-bold p-2 text-center mb-4 text-xs tracking-widest animate-pulse">
-        SCREENSHOT THE JSON BELOW AND SEND TO SILENT WOLF WITH YOUR BOT SESSION ID
-      </div>
-
-      <div className="relative group">
-        <div className="absolute inset-0 bg-primary/20 blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        <pre
-          ref={jsonRef}
-          data-testid="text-success-json"
-          className="relative bg-[#050505] border border-primary/40 p-4 overflow-x-auto font-mono text-xs text-primary shadow-inner selection:bg-primary selection:text-black leading-relaxed"
-          style={{ fontFamily: "var(--font-mono)" }}
-        >
-{`{
-  "protocol": "WOLFTECH_DEPLOYMENT",
-  "status": "VERIFIED_AND_LOCKED",
-  "transaction": {
-    "id": ${tx.id},
-    "reference": "${tx.reference}",
-    "method": "${tx.method?.toUpperCase() || "CARD"}",
-    "amount_kes": ${tx.amount},
-    "operator_id": "${tx.email}",
-    "timestamp": "${tx.createdAt}"
-  },
-  "action": "REQUIRE_MANUAL_PROVISION"
-}`}
-        </pre>
+        <div className="flex justify-between">
+          <span>Amount</span>
+          <span className="text-amber-400/70">{tx.amount} KES</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Method</span>
+          <span className="text-amber-400/70">{tx.method?.toUpperCase()}</span>
+        </div>
       </div>
 
       <button
-        onClick={() => window.location.href = "/"}
-        data-testid="button-acknowledge"
-        className="mt-4 w-full border border-primary/50 text-primary py-3 font-bold tracking-widest flex items-center justify-center gap-2 text-sm"
+        onClick={() => (window.location.href = "/")}
+        className="w-full border border-amber-500/30 text-amber-400 py-3 rounded-xl font-semibold text-sm hover:bg-amber-500/10 transition-colors"
       >
-        ACKNOWLEDGE & CLOSE
+        Back to Home
       </button>
     </div>
   );
@@ -475,15 +453,14 @@ function VerificationView({ reference }: { reference: string }) {
 
   if (isLoading) {
     return (
-      <div className="glass-panel p-12 text-center glow-box flex flex-col items-center justify-center space-y-6 relative">
-        <CornerDeco />
-        <div className="relative">
-          <div className="absolute inset-0 border-4 border-primary/20 rounded-full animate-ping" />
-          <ShieldCheck className="w-16 h-16 text-primary animate-pulse relative z-10" />
+      <div className="coffee-card p-12 text-center space-y-5">
+        <div className="relative inline-flex">
+          <div className="absolute inset-0 border-4 border-amber-500/20 rounded-full animate-ping" />
+          <CoffeeCup size="md" />
         </div>
         <div>
-          <h2 className="text-xl text-primary font-bold tracking-widest animate-pulse">VERIFYING TRANSACTION</h2>
-          <p className="text-muted-foreground text-sm font-mono mt-2">REF: {reference.substring(0, 12)}...</p>
+          <h2 className="text-lg font-bold text-amber-300 animate-pulse">Verifying your support...</h2>
+          <p className="text-muted-foreground text-sm mt-1">Just a moment ☕</p>
         </div>
       </div>
     );
@@ -491,12 +468,15 @@ function VerificationView({ reference }: { reference: string }) {
 
   if (isError) {
     return (
-      <div className="glass-panel p-8 text-center border-destructive/50">
-        <AlertTriangle className="w-16 h-16 text-destructive mx-auto mb-4" />
-        <h2 className="text-2xl text-destructive font-bold tracking-widest mb-2">VERIFICATION FAILED</h2>
-        <p className="text-muted-foreground font-mono mb-8">{error?.message}</p>
-        <button onClick={() => window.location.href = "/"} className="border border-destructive text-destructive px-6 py-3 font-bold tracking-widest">
-          RETURN
+      <div className="coffee-card p-8 text-center space-y-4">
+        <AlertTriangle className="w-12 h-12 text-red-400 mx-auto" />
+        <h2 className="text-xl font-bold text-red-400">Verification Failed</h2>
+        <p className="text-muted-foreground text-sm">{error?.message}</p>
+        <button
+          onClick={() => (window.location.href = "/")}
+          className="border border-red-500/40 text-red-400 px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-red-500/10 transition-colors"
+        >
+          Go Back
         </button>
       </div>
     );
@@ -508,22 +488,29 @@ function VerificationView({ reference }: { reference: string }) {
 
 type Tab = "mobilemoney" | "card";
 
-function PaymentForm() {
+function SupportForm() {
   const [country, setCountry] = useState<CountryConfig>(KENYA);
   const [tab, setTab] = useState<Tab>("mobilemoney");
+  const [coffeeCount, setCoffeeCount] = useState<number>(1);
+  const [customCoffees, setCustomCoffees] = useState<string>("");
+  const [isCustom, setIsCustom] = useState(false);
+  const [name, setName] = useState("");
+  const [message, setMessage] = useState("");
   const [momoRef, setMomoRef] = useState<string | null>(null);
   const [isMpesa, setIsMpesa] = useState(false);
   const [momoSuccess, setMomoSuccess] = useState<Transaction | null>(null);
-  const [amountKesInput, setAmountKesInput] = useState<string>(String(DEFAULT_KES));
 
   const { data: ratesData } = useExchangeRates();
   const rates = ratesData?.rates;
 
-  const parsedKes = parseFloat(amountKesInput);
-  const validKes = !isNaN(parsedKes) && parsedKes >= MIN_KES ? Math.round(parsedKes) : MIN_KES;
-
   const isKenya = country.code === "KE";
-  const convertedAmount = convertAmount(rates, country.currency, validKes);
+
+  const activeCoffees = isCustom
+    ? Math.max(1, parseInt(customCoffees) || 1)
+    : coffeeCount;
+  const amountKes = activeCoffees * COFFEE_PRICE_KES;
+
+  const convertedAmount = convertAmount(rates, country.currency, amountKes);
   const formattedAmount = formatAmount(convertedAmount, country.currency);
 
   useEffect(() => {
@@ -533,105 +520,173 @@ function PaymentForm() {
   }, [country.code, isKenya]);
 
   if (momoSuccess) return <SuccessView tx={momoSuccess} />;
-  if (momoRef) return (
-    <MobileMoneyWaitingView
-      reference={momoRef}
-      isMpesa={isMpesa}
-      onSuccess={setMomoSuccess}
-    />
-  );
+  if (momoRef)
+    return (
+      <WaitingView
+        reference={momoRef}
+        isMpesa={isMpesa}
+        onSuccess={setMomoSuccess}
+      />
+    );
+
+  const PRESET_COUNTS = [1, 3, 5];
 
   return (
-    <div className="glass-panel p-5 md:p-6 glow-box relative">
-      <CornerDeco />
+    <div className="space-y-4">
+      {/* Creator Header */}
+      <div className="text-center pb-2">
+        <CoffeeCup size="lg" />
+        <h1
+          className="text-3xl font-bold text-amber-200 mt-3 mb-1"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
+          Buy me a coffee
+        </h1>
+        <p className="text-muted-foreground text-sm">
+          If you enjoy my work, support me with a coffee!
+        </p>
+      </div>
 
-      <div className="mb-4 border-b border-primary/20 pb-4 space-y-3">
-        <CountrySelector selected={country} onChange={setCountry} />
-
-        <div className="text-center">
-          <h2 className="text-lg text-white font-semibold flex justify-center items-center gap-2">
-            <Zap className="w-4 h-4 text-primary" /> INITIALIZE UPLINK
-          </h2>
-          <div className="mt-3 flex flex-col items-center gap-2">
-            <span className="text-muted-foreground text-xs font-bold tracking-widest">DEPLOYMENT FEE (KES)</span>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                min={MIN_KES}
-                step={1}
-                value={amountKesInput}
-                onChange={(e) => setAmountKesInput(e.target.value)}
-                data-testid="input-amount-kes"
-                className="w-28 bg-black/50 border border-primary/30 px-3 py-2 text-primary text-center text-xl font-black focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-mono"
-              />
-              <span className="text-primary/60 text-xs font-mono font-bold">KES</span>
+      <div className="coffee-card p-5 space-y-5">
+        {/* Coffee Count Selector */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">☕</span>
+            <span className="font-bold text-amber-200">×</span>
+            <div className="flex gap-2 flex-wrap">
+              {PRESET_COUNTS.map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => { setCoffeeCount(n); setIsCustom(false); }}
+                  className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${
+                    !isCustom && coffeeCount === n
+                      ? "bg-amber-500 text-amber-950 shadow-lg shadow-amber-500/20"
+                      : "bg-amber-950/50 text-amber-400/70 border border-amber-800/30 hover:border-amber-600/40"
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setIsCustom(true)}
+                className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${
+                  isCustom
+                    ? "bg-amber-500 text-amber-950 shadow-lg shadow-amber-500/20"
+                    : "bg-amber-950/50 text-amber-400/70 border border-amber-800/30 hover:border-amber-600/40"
+                }`}
+              >
+                Custom
+              </button>
             </div>
-            {(isNaN(parsedKes) || parsedKes < MIN_KES) && (
-              <span className="text-destructive text-xs font-mono flex items-center gap-1">
-                <AlertTriangle className="w-3 h-3" /> MIN {MIN_KES} KES
-              </span>
-            )}
-            {isKenya ? (
-              <span className="text-sm font-bold text-primary/50 tracking-widest font-mono">PLACE YOUR PRICE ABOVE</span>
-            ) : (
-              <span className="text-3xl font-black text-primary glow-text">{formattedAmount}</span>
-            )}
-            {!isKenya && (
-              <span className="text-primary/40 text-xs font-mono">≈ {validKes} KES</span>
-            )}
+          </div>
+
+          {isCustom && (
+            <input
+              type="number"
+              min={1}
+              value={customCoffees}
+              onChange={(e) => setCustomCoffees(e.target.value)}
+              placeholder="How many coffees?"
+              className={inputClass}
+              autoFocus
+            />
+          )}
+
+          <div className="bg-amber-500/8 border border-amber-500/15 rounded-xl p-3 flex items-center justify-between">
+            <span className="text-muted-foreground text-sm">
+              {activeCoffees} {activeCoffees === 1 ? "coffee" : "coffees"} ×{" "}
+              {COFFEE_PRICE_KES} KES
+            </span>
+            <span className="text-amber-300 font-bold text-lg">
+              {isKenya ? `${amountKes} KES` : formattedAmount}
+            </span>
           </div>
         </div>
+
+        {/* Name */}
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-amber-400/70">
+            Your name <span className="text-muted-foreground/50 font-normal">(optional)</span>
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Anonymous supporter"
+            className={inputClass}
+          />
+        </div>
+
+        {/* Message */}
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-amber-400/70">
+            Leave a message <span className="text-muted-foreground/50 font-normal">(optional)</span>
+          </label>
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Keep up the great work! ☕"
+            rows={3}
+            className={inputClass + " resize-none"}
+          />
+        </div>
+
+        {/* Country */}
+        <CountrySelector selected={country} onChange={setCountry} />
+
+        {/* Payment Tabs (Kenya only: mobile + card; others: card) */}
+        {isKenya && (
+          <div className="flex rounded-xl overflow-hidden border border-amber-800/30">
+            <button
+              type="button"
+              onClick={() => setTab("mobilemoney")}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold transition-all ${
+                tab === "mobilemoney"
+                  ? "bg-amber-500 text-amber-950"
+                  : "text-amber-400/60 bg-transparent hover:bg-amber-500/10"
+              }`}
+            >
+              <Smartphone className="w-4 h-4" /> Mobile Money
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("card")}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold transition-all border-l border-amber-800/30 ${
+                tab === "card"
+                  ? "bg-amber-500 text-amber-950"
+                  : "text-amber-400/60 bg-transparent hover:bg-amber-500/10"
+              }`}
+            >
+              <CreditCard className="w-4 h-4" /> Card
+            </button>
+          </div>
+        )}
+
+        {/* Payment Form */}
+        {isKenya && tab === "mobilemoney" ? (
+          <MobileMoneyForm
+            onSent={(ref, mpesa) => { setMomoRef(ref); setIsMpesa(mpesa); }}
+            amountKes={amountKes}
+            name={name}
+            message={message}
+          />
+        ) : (
+          <CardPaymentForm
+            country={country}
+            amountKes={amountKes}
+            name={name}
+            message={message}
+          />
+        )}
       </div>
 
-      <div className="mb-4 border border-primary/20 bg-primary/5 p-3 space-y-2">
-        <p className="text-primary text-xs font-bold tracking-widest text-center mb-2">HOW IT WORKS</p>
-        <div className="flex items-start gap-2">
-          <span className="text-primary font-black font-mono text-xs shrink-0 w-4">01</span>
-          <p className="text-muted-foreground text-xs font-mono leading-snug">Complete the payment below using mobile money or card.</p>
-        </div>
-        <div className="flex items-start gap-2">
-          <span className="text-primary font-black font-mono text-xs shrink-0 w-4">02</span>
-          <p className="text-muted-foreground text-xs font-mono leading-snug">Screenshot the payment confirmation JSON shown after success.</p>
-        </div>
-        <div className="flex items-start gap-2">
-          <span className="text-primary font-black font-mono text-xs shrink-0 w-4">03</span>
-          <p className="text-muted-foreground text-xs font-mono leading-snug">Send screenshot to <span className="text-primary font-bold">Silent Wolf</span> with your <span className="text-primary font-bold">Bot Session ID</span>.</p>
-        </div>
-      </div>
-
-      {isKenya && (
-        <div className="flex gap-0 mb-4 border border-primary/30">
-          <button
-            type="button"
-            data-testid="tab-mpesa"
-            onClick={() => setTab("mobilemoney")}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold tracking-widest transition-all ${
-              tab === "mobilemoney" ? "bg-primary text-black" : "text-primary/60 bg-transparent"
-            }`}
-          >
-            <Smartphone className="w-4 h-4" /> MOBILE MONEY
-          </button>
-          <button
-            type="button"
-            data-testid="tab-card"
-            onClick={() => setTab("card")}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold tracking-widest transition-all border-l border-primary/30 ${
-              tab === "card" ? "bg-primary text-black" : "text-primary/60 bg-transparent"
-            }`}
-          >
-            <CreditCard className="w-4 h-4" /> CARD
-          </button>
-        </div>
-      )}
-
-      {isKenya && tab === "mobilemoney" ? (
-        <MobileMoneyForm
-          onSent={(ref, mpesa) => { setMomoRef(ref); setIsMpesa(mpesa); }}
-          amountKes={validKes}
-        />
-      ) : (
-        <CardPaymentForm country={country} amountKes={validKes} />
-      )}
+      <p className="text-center text-xs text-muted-foreground/50 flex items-center justify-center gap-1">
+        <span>Powered by Paystack</span>
+        <span>·</span>
+        <span>Secure payments</span>
+      </p>
     </div>
   );
 }
@@ -650,7 +705,7 @@ export default function Home() {
 
   return (
     <PageContainer>
-      {reference ? <VerificationView reference={reference} /> : <PaymentForm />}
+      {reference ? <VerificationView reference={reference} /> : <SupportForm />}
     </PageContainer>
   );
 }

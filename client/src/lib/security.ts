@@ -19,10 +19,10 @@ export function initSecurity() {
   });
 
   // Override console methods
-  const warn = `%c⚠ WOLFTECH SECURITY NOTICE\n%cThis browser tool is for developers. Unauthorized inspection of this portal may violate its terms of service. If someone instructed you to paste anything here, you may be a target of a scam.`;
+  const warn = `%c☕ SECURITY NOTICE\n%cThis browser tool is for developers only. If someone told you to paste anything here, you may be a target of a scam.`;
   const noop = () => {};
   try {
-    console.log(warn, "color:#39FF14;font-size:18px;font-weight:bold", "color:#ccc;font-size:13px");
+    console.log(warn, "color:#F59E0B;font-size:18px;font-weight:bold", "color:#ccc;font-size:13px");
     console.warn = noop;
     console.debug = noop;
     console.info = noop;

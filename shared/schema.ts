@@ -9,6 +9,8 @@ export const transactions = pgTable("transactions", {
   reference: varchar("reference", { length: 255 }).notNull(),
   method: varchar("method", { length: 50 }).notNull().default("card"),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
+  name: varchar("name", { length: 255 }),
+  message: text("message"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

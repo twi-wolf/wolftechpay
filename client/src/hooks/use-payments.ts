@@ -17,11 +17,23 @@ export function useExchangeRates() {
 
 export function useInitPayment() {
   return useMutation({
-    mutationFn: async ({ email, country, amountKes }: { email: string; country: string; amountKes?: number }) => {
+    mutationFn: async ({
+      email,
+      country,
+      amountKes,
+      name,
+      message,
+    }: {
+      email: string;
+      country: string;
+      amountKes?: number;
+      name?: string;
+      message?: string;
+    }) => {
       const res = await fetch(api.payments.init.path, {
         method: api.payments.init.method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, country, amountKes }),
+        body: JSON.stringify({ email, country, amountKes, name, message }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || "Failed to initialize payment gateway");
@@ -38,6 +50,8 @@ export function useInitMobileMoney() {
       provider: string;
       country: string;
       amountKes?: number;
+      name?: string;
+      message?: string;
     }) => {
       const res = await fetch(api.payments.mobilemoney.path, {
         method: api.payments.mobilemoney.method,

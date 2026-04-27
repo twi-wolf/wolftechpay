@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Oxanium:wght@300;400;500;600;700;800&family=Rajdhani:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Nunito:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,106 +6,93 @@
 
 @layer base {
   :root {
-    --font-display: 'Oxanium', system-ui, sans-serif;
-    --font-body: 'Rajdhani', system-ui, sans-serif;
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-body: 'Nunito', system-ui, sans-serif;
     --font-mono: 'Fira Code', monospace;
 
-    /* Dark Black & Neon Green Vibe */
-    --background: 0 0% 3%;
-    --foreground: 0 0% 90%;
-    
-    /* Primary: Neon Green (#39FF14) */
-    --primary: 111 100% 54%;
-    --primary-foreground: 0 0% 0%;
-    
-    --card: 0 0% 6%;
-    --card-foreground: 0 0% 95%;
-    
-    --border: 111 100% 54% / 0.2;
-    --input: 111 100% 54% / 0.15;
-    
-    --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 60%;
-    
-    --accent: 111 100% 54%;
-    --accent-foreground: 0 0% 0%;
-    
-    --destructive: 0 100% 50%;
+    /* Warm Dark Background */
+    --background: 30 40% 5%;
+    --foreground: 38 30% 90%;
+
+    /* Primary: Warm Amber */
+    --primary: 38 92% 52%;
+    --primary-foreground: 30 40% 5%;
+
+    --card: 30 30% 8%;
+    --card-foreground: 38 20% 92%;
+
+    --border: 38 50% 30% / 0.35;
+    --input: 38 50% 30% / 0.2;
+
+    --muted: 30 20% 14%;
+    --muted-foreground: 38 15% 55%;
+
+    --accent: 38 80% 60%;
+    --accent-foreground: 30 40% 5%;
+
+    --destructive: 0 80% 55%;
     --destructive-foreground: 0 0% 100%;
-    
-    --ring: 111 100% 54%;
-    --radius: 0.25rem;
+
+    --ring: 38 92% 52%;
+    --radius: 0.5rem;
   }
 
   body {
-    @apply bg-background text-foreground antialiased selection:bg-primary selection:text-black;
+    @apply bg-background text-foreground antialiased;
     font-family: var(--font-body);
-    /* Subtle CRT/Grid background effect */
-    background-image: 
-      linear-gradient(rgba(57, 255, 20, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(57, 255, 20, 0.03) 1px, transparent 1px);
-    background-size: 30px 30px;
-    background-position: center center;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, hsl(38 92% 52% / 0.05) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, hsl(30 60% 20% / 0.08) 0%, transparent 60%);
+    background-attachment: fixed;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
-    @apply font-bold tracking-wider;
+    @apply font-bold;
   }
 }
 
 @layer utilities {
   .glow-text {
-    text-shadow: 0 0 10px hsl(var(--primary) / 0.5), 0 0 20px hsl(var(--primary) / 0.3);
-  }
-  
-  .glow-box {
-    box-shadow: 0 0 15px hsl(var(--primary) / 0.2), inset 0 0 15px hsl(var(--primary) / 0.1);
+    text-shadow: 0 0 20px hsl(var(--primary) / 0.4), 0 0 40px hsl(var(--primary) / 0.2);
   }
 
-  .glow-box-intense {
-    box-shadow: 0 0 20px hsl(var(--primary) / 0.4), 0 0 40px hsl(var(--primary) / 0.2);
+  .glow-box {
+    box-shadow:
+      0 0 0 1px hsl(38 50% 30% / 0.3),
+      0 4px 24px hsl(30 40% 2% / 0.6),
+      0 0 40px hsl(38 92% 52% / 0.07);
   }
 
   .glass-panel {
-    @apply bg-black/60 backdrop-blur-md border border-primary/30;
+    @apply bg-card/80 backdrop-blur-sm border border-amber-900/30;
+  }
+
+  .coffee-card {
+    background: linear-gradient(135deg, hsl(30 30% 9%) 0%, hsl(30 25% 7%) 100%);
+    border: 1px solid hsl(38 50% 25% / 0.4);
+    border-radius: 1rem;
+    box-shadow:
+      0 4px 32px hsl(30 40% 2% / 0.7),
+      inset 0 1px 0 hsl(38 80% 60% / 0.08);
   }
 }
 
-/* Custom Animations */
-@keyframes flicker {
-  0%, 19.999%, 22%, 62.999%, 64%, 64.999%, 70%, 100% {
-    opacity: 1;
-    text-shadow: 0 0 10px hsl(var(--primary) / 0.5), 0 0 20px hsl(var(--primary) / 0.3);
-  }
-  20%, 21.999%, 63%, 63.999%, 65%, 69.999% {
-    opacity: 0.4;
-    text-shadow: none;
-  }
+/* Steam animation for coffee cup */
+@keyframes steam {
+  0% { opacity: 0; transform: translateY(0) scaleX(1); }
+  30% { opacity: 0.7; }
+  70% { opacity: 0.3; transform: translateY(-12px) scaleX(1.2); }
+  100% { opacity: 0; transform: translateY(-20px) scaleX(0.8); }
 }
 
-.animate-flicker {
-  animation: flicker 4s infinite;
-}
+.steam-1 { animation: steam 2.5s ease-in-out infinite; }
+.steam-2 { animation: steam 2.5s ease-in-out 0.6s infinite; }
+.steam-3 { animation: steam 2.5s ease-in-out 1.2s infinite; }
 
-@keyframes scanline {
-  0% {
-    transform: translateY(-100%);
-  }
-  100% {
-    transform: translateY(100vh);
-  }
-}
-
-.scanline-overlay::after {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 10vh;
-  background: linear-gradient(to bottom, transparent, rgba(57, 255, 20, 0.1), transparent);
-  animation: scanline 8s linear infinite;
-  pointer-events: none;
-  z-index: 50;
+/* Floating coffee beans background */
+@keyframes floatUp {
+  0% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
+  50% { opacity: 0.6; }
+  100% { transform: translateY(-40px) rotate(15deg); opacity: 0; }
 }

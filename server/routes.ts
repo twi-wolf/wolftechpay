@@ -126,7 +126,7 @@ export async function registerRoutes(
 
       const phone = normalizeKenyanPhone(input.phone);
       const cleanPhone = phone.replace(/\D/g, '');
-      const email = input.email || `user.${cleanPhone}@wolftech.pay`;
+      const email = input.email || `user.${cleanPhone}@buymeacoffee.pay`;
       const baseKes = input.amountKes ?? BASE_AMOUNT_KES;
 
       const body = JSON.stringify({
@@ -155,6 +155,8 @@ export async function registerRoutes(
           amount: baseKes,
           reference: ref,
           method,
+          name: input.name,
+          message: input.message,
         });
 
         res.status(200).json({ reference: ref, displayText, status });
@@ -243,6 +245,8 @@ export async function registerRoutes(
           amount: baseKes,
           reference: response.data.reference,
           method: "card",
+          name: input.name,
+          message: input.message,
         });
         res.status(200).json({ authorizationUrl: response.data.authorization_url, reference: response.data.reference });
       } else {

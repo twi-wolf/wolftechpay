@@ -27,7 +27,9 @@ export const api = {
       input: z.object({
         email: z.string().email(),
         country: z.string().length(2),
-        amountKes: z.number().min(60).optional(),
+        amountKes: z.number().min(100).optional(),
+        name: z.string().max(255).optional(),
+        message: z.string().max(500).optional(),
       }),
       responses: {
         200: z.object({
@@ -46,7 +48,9 @@ export const api = {
         phone: z.string().min(9).max(15),
         provider: z.string(),
         country: z.string().length(2),
-        amountKes: z.number().min(60).optional(),
+        amountKes: z.number().min(100).optional(),
+        name: z.string().max(255).optional(),
+        message: z.string().max(500).optional(),
       }),
       responses: {
         200: z.object({

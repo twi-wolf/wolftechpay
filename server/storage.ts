@@ -3,13 +3,27 @@ import { transactions, type Transaction } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 export interface IStorage {
-  createTransaction(transaction: { email: string; amount: number; reference: string; method: string }): Promise<Transaction>;
+  createTransaction(transaction: {
+    email: string;
+    amount: number;
+    reference: string;
+    method: string;
+    name?: string;
+    message?: string;
+  }): Promise<Transaction>;
   getTransactionByReference(reference: string): Promise<Transaction | undefined>;
   updateTransactionStatus(reference: string, status: string): Promise<Transaction | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
-  async createTransaction(transaction: { email: string; amount: number; reference: string; method: string }): Promise<Transaction> {
+  async createTransaction(transaction: {
+    email: string;
+    amount: number;
+    reference: string;
+    method: string;
+    name?: string;
+    message?: string;
+  }): Promise<Transaction> {
     const [newTransaction] = await db.insert(transactions).values(transaction).returning();
     return newTransaction;
   }

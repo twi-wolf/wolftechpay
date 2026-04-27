@@ -43,3 +43,4 @@ outputType = "webview"
 
 [agent]
 expertMode = true
+stack = "FULLSTACK_JS"
